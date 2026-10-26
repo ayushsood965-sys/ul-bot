@@ -3,6 +3,9 @@ import { MetaInstagramService } from "@/lib/services/meta-instagram-service";
 import db from "@/lib/db";
 import { recordAuditLog } from "@/lib/services/audit-log-service";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const health = await MetaInstagramService.checkConnectionHealth();

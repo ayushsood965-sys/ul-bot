@@ -3,6 +3,9 @@ import db from "@/lib/db";
 import { PublishingSchedulerService } from "@/lib/services/publishing-scheduler-service";
 import { recordAuditLog } from "@/lib/services/audit-log-service";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const jobs = await db.publishingJob.findMany({
