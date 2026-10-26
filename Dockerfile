@@ -1,9 +1,9 @@
-FROM node:22-alpine AS base
+FROM node:22-slim AS base
 
 WORKDIR /app
 
-# Install dependencies needed for sharp and build tools
-RUN apk add --no-cache libc6-compat python3 make g++
+# Install openssl for Prisma and standard glibc tools
+RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm install --include=dev --no-audit
