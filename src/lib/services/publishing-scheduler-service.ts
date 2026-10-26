@@ -1,6 +1,8 @@
 import db from "@/lib/db";
 import { MetaInstagramService } from "./meta-instagram-service";
 import { recordAuditLog } from "./audit-log-service";
+import { AIService } from "./ai-service";
+import { runContentModeration } from "./moderation-service";
 
 export class PublishingSchedulerService {
   // Check if publishing is globally paused via Emergency Kill-Switch
@@ -240,5 +242,99 @@ export class PublishingSchedulerService {
     }
 
     return staleJobs.count;
+  }
+
+  // Autonomous content generation & queue scheduling
+  public static async autoGenerateNextPost(): Promise<{ success: boolean; post?: any; job?: any; message: string }> {
+    if (await this.isPublishingPaused()) {
+      return { success: false, message: "Publishing is paused by emergency stop." };
+    }
+
+    const genEnabled = await db.systemSetting.findUnique({ where: { key: "automation_generation_enabled" } });
+    if (genEnabled?.value === "false") {
+      return { success: false, message: "Automation content generation is disabled in settings." };
+    }
+
+    const targetSetting = await db.systemSetting.findUnique({ where: { key: "daily_publishing_target" } });
+    const dailyTarget = targetSetting?.value ? parseInt(targetSetting.value, 10) : 5;
+
+    // Check count today
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const postsToday = await db.contentPost.count({
+      where: {
+        createdAt: { gte: startOfDay },
+      },
+    });
+
+    if (postsToday >= dailyTarget) {
+      return { success: false, message: `Daily target of ${dailyTarget} posts already reached today (${postsToday} created).` };
+    }
+
+    // Pick rotating pillar & format
+    const pillars = ["RELATIONSHIPS", "SOCIAL_BEHAVIOUR", "MONEY_MODERN_LIFE"] as const;
+    const formats = ["THE_CASE", "UNPOPULAR_OPINION", "AURA_TAX", "TWO_SIDES"] as const;
+    const pillar = pillars[postsToday % pillars.length];
+    const format = formats[postsToday % formats.length];
+
+    // Generate idea & post
+    const { ideas } = await AIService.generateIdeas({ pillar, format, count: 1 });
+    const topIdea = ideas[0];
+    if (!topIdea) {
+      throw new Error("AI did not produce an idea candidate");
+    }
+
+    const { post: generated } = await AIService.generateStructuredPost({
+      ideaPremise: topIdea.premise,
+      pillar,
+      format,
+    });
+
+    const modCheck = runContentModeration(
+      `${generated.hook} ${generated.mainNarrative} ${generated.caption}`,
+      { source: format }
+    );
+
+    const contentId = `TVR-${new Date().getFullYear()}-${format.slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const newPost = await db.contentPost.create({
+      data: {
+        contentId,
+        title: generated.title,
+        pillar: generated.pillar,
+        format: generated.format,
+        primaryLanguage: "en-IN",
+        targetAudience: "Indian Gen Z",
+        hook: generated.hook,
+        mainNarrative: modCheck.sanitizedText || generated.mainNarrative,
+        caption: generated.caption,
+        hashtags: JSON.stringify(generated.hashtags || []),
+        callToAction: generated.callToAction,
+        suggestedTemplate: generated.suggestedTemplate || "THE_COURTROOM",
+        optionsJson: generated.options ? JSON.stringify(generated.options) : null,
+        auraPoints: generated.auraPoints ? Number(generated.auraPoints) : null,
+        status: "APPROVED",
+        moderationStatus: modCheck.passed ? "PASSED" : "FLAGGED",
+        qualityScore: 8.8,
+        isCarousel: false,
+        slideCount: 1,
+        contentFingerprint: `fp_${contentId}_${Date.now()}`,
+        renderedAssetUrl: `/api/creative/render/${contentId}`,
+      },
+    });
+
+    // Schedule for immediate publication or next slot (+5 minutes)
+    const scheduledTime = new Date(Date.now() + 5 * 60 * 1000);
+    const job = await this.schedulePost(newPost.id, scheduledTime);
+
+    recordAuditLog({
+      action: "AUTO_POST_GENERATED_AND_QUEUED",
+      category: "AI_GEN",
+      details: `Autonomous post created and queued: [${contentId}] "${newPost.title}" for ${scheduledTime.toLocaleTimeString()}`,
+      severity: "INFO",
+    });
+
+    return { success: true, post: newPost, job, message: `Generated and queued [${contentId}] "${newPost.title}"` };
   }
 }

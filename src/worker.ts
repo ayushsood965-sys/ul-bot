@@ -36,8 +36,11 @@ async function runWorkerLoop() {
     console.error("[Worker] Startup recovery failed:", err);
   }
 
+  let cycleCount = 0;
+
   // 2. Continuous scheduler loop
   while (isRunning) {
+    cycleCount++;
     try {
       await updateHeartbeat();
 
@@ -45,6 +48,18 @@ async function runWorkerLoop() {
       const result = await PublishingSchedulerService.processDueJobs(WORKER_ID);
       if (result.processed > 0) {
         console.log(`[Worker] Processed ${result.processed} jobs (${result.published} published, ${result.failed} failed)`);
+      }
+
+      // Check autonomous generation: Every 15 cycles (~5 mins) or on startup
+      if (cycleCount === 1 || cycleCount % 15 === 0) {
+        try {
+          const autoRes = await PublishingSchedulerService.autoGenerateNextPost();
+          if (autoRes.success) {
+            console.log(`[Worker] Autonomous post generation: ${autoRes.message}`);
+          }
+        } catch (autoErr: any) {
+          console.warn("[Worker] Autonomous generation cycle skipped:", autoErr.message);
+        }
       }
     } catch (err) {
       console.error("[Worker] Error in scheduler execution loop:", err);

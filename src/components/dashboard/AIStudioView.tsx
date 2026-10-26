@@ -14,6 +14,8 @@ import {
   Eye,
   Calendar,
   Layers,
+  Play,
+  Clock,
 } from "lucide-react";
 
 export function AIStudioView() {
@@ -141,6 +143,66 @@ export function AIStudioView() {
       if (data.success) {
         setGeneratedPost(data.post);
         setSavingStatus("✔ Approved! Ready for scheduling.");
+      }
+    } catch (e: any) {
+      setSavingStatus(`Error: ${e.message}`);
+    }
+  };
+
+  // Step 5: Add post directly to publishing queue
+  const handleSchedulePost = async (minutesFromNow: number = 5) => {
+    if (!generatedPost) return;
+    try {
+      setSavingStatus("Adding to Queue...");
+      const scheduledTime = new Date(Date.now() + minutesFromNow * 60 * 1000);
+      const res = await fetch("/api/publishing/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: generatedPost.id,
+          scheduledFor: scheduledTime.toISOString(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedPost((prev: any) => ({ ...prev, status: "SCHEDULED" }));
+        setSavingStatus(`✔ Added to Publishing Queue! Scheduled for ${scheduledTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`);
+      } else {
+        setSavingStatus(`Error: ${data.error}`);
+      }
+    } catch (e: any) {
+      setSavingStatus(`Error: ${e.message}`);
+    }
+  };
+
+  // Step 6: Publish immediately to Instagram Feed
+  const handlePublishNow = async () => {
+    if (!generatedPost) return;
+    if (!confirm("Are you sure you want to publish this post live to Instagram right now?")) return;
+    try {
+      setSavingStatus("Publishing live to Instagram...");
+      // 1. Ensure scheduled
+      await fetch("/api/publishing/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: generatedPost.id,
+          scheduledFor: new Date().toISOString(),
+        }),
+      });
+
+      // 2. Trigger immediate worker execution
+      const res = await fetch("/api/publishing/queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish_now" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedPost((prev: any) => ({ ...prev, status: "PUBLISHED" }));
+        setSavingStatus("🚀 Successfully Published live to Instagram Feed!");
+      } else {
+        setSavingStatus(`Publish Error: ${data.error}`);
       }
     } catch (e: any) {
       setSavingStatus(`Error: ${e.message}`);
@@ -426,17 +488,40 @@ export function AIStudioView() {
                 <span>Quality Score: {generatedPost.qualityScore}/10 (Passed)</span>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-wrap items-center gap-2">
                 {savingStatus && (
-                  <span className="text-xs font-semibold text-emerald-600">{savingStatus}</span>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mr-2">
+                    {savingStatus}
+                  </span>
                 )}
-                {generatedPost.status !== "APPROVED" && (
+
+                {generatedPost.status !== "APPROVED" && generatedPost.status !== "SCHEDULED" && generatedPost.status !== "PUBLISHED" && (
                   <button
                     onClick={handleApproveDraft}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center space-x-1"
+                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs rounded-lg transition-colors flex items-center space-x-1"
                   >
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span>Approve Draft</span>
+                  </button>
+                )}
+
+                {generatedPost.status !== "SCHEDULED" && generatedPost.status !== "PUBLISHED" && (
+                  <button
+                    onClick={() => handleSchedulePost(5)}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center space-x-1.5 shadow-xs"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>⚡ Add to Queue</span>
+                  </button>
+                )}
+
+                {generatedPost.status !== "PUBLISHED" && (
+                  <button
+                    onClick={handlePublishNow}
+                    className="px-3.5 py-1.5 bg-red-700 hover:bg-red-800 text-white font-semibold text-xs rounded-lg transition-colors flex items-center space-x-1.5 shadow-xs"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>🚀 Publish Now</span>
                   </button>
                 )}
               </div>
