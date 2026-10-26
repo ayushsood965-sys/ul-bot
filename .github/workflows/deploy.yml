@@ -1,0 +1,20 @@
+name: Automated Coolify Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Trigger Coolify Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Deployment Request to Coolify
+        run: |
+          echo "Triggering deployment for unfiltered-lore on Coolify..."
+          response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "http://169.58.12.127:8000/api/v1/deploy" \
+            -H "Authorization: Bearer 10|NFtP1Hcm6ltyrzQOvEfWZzcZFVDmRUKpKI7yQlUB" \
+            -H "Content-Type: application/json" \
+            -d '{"uuid":"nn2qmvkko6uptsxlo7kdoilv"}')
+          echo "$response"

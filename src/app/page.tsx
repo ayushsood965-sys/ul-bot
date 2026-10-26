@@ -26,8 +26,8 @@ export default function App() {
   // Authentication State
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [loginEmail, setLoginEmail] = useState<string>("owner@theverdictroom.internal");
-  const [loginPassword, setLoginPassword] = useState<string>("Verdict@2026!");
+  const [loginEmail, setLoginEmail] = useState<string>("owner@unfilteredlore.com");
+  const [loginPassword, setLoginPassword] = useState<string>("Ayush1994*");
   const [loginError, setLoginError] = useState<string>("");
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
@@ -145,11 +145,11 @@ export default function App() {
           </div>
 
           <div className="p-3 bg-red-950/20 border border-red-900/40 rounded-xl text-xs text-red-300">
-            <span className="font-bold">Default Owner Credentials:</span>
+            <span className="font-bold">Dashboard Credentials (Pre-filled):</span>
             <div className="font-mono text-[11px] text-slate-300 mt-1">
-              Email: owner@theverdictroom.internal
+              Username: owner@unfilteredlore.com
               <br />
-              Password: Verdict@2026!
+              Password: Ayush1994*
             </div>
           </div>
 
@@ -163,10 +163,10 @@ export default function App() {
           <form onSubmit={handleLogin} className="space-y-4 text-xs">
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
-                Editorial Email
+                Username / Email
               </label>
               <input
-                type="email"
+                type="text"
                 required
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}

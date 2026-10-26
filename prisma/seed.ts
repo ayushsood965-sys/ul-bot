@@ -7,10 +7,10 @@ async function main() {
   console.log("🌱 Seeding The Verdict Room Studio database...");
 
   // 1. Owner & Editor User
-  const passwordHash = await bcrypt.hash("Verdict@2026!", 10);
+  const passwordHash = await bcrypt.hash("Ayush1994*", 10);
   const owner = await prisma.user.upsert({
     where: { email: "owner@theverdictroom.internal" },
-    update: {},
+    update: { passwordHash },
     create: {
       email: "owner@theverdictroom.internal",
       name: "Chief Editor (Unfiltered Lore)",
@@ -20,15 +20,25 @@ async function main() {
   });
   await prisma.user.upsert({
     where: { email: "owner@unfilteredlore.com" },
-    update: {},
+    update: { passwordHash },
     create: {
       email: "owner@unfilteredlore.com",
-      name: "Owner (Unfiltered Lore)",
+      name: "Ayush Sood (Owner)",
       passwordHash,
       role: "OWNER",
     },
   });
-  console.log("✔ Owner user ready:", owner.email);
+  await prisma.user.upsert({
+    where: { email: "ayushsood965@gmail.com" },
+    update: { passwordHash },
+    create: {
+      email: "ayushsood965@gmail.com",
+      name: "Ayush Sood",
+      passwordHash,
+      role: "OWNER",
+    },
+  });
+  console.log("✔ Owner user ready with password Ayush1994*:", owner.email);
 
   // 2. Brand Configuration
   await prisma.brandConfiguration.deleteMany({});

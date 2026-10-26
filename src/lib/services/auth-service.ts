@@ -79,10 +79,22 @@ export async function clearSessionCookie() {
   });
 }
 
-export async function authenticateUser(email: string, password: string):Promise<UserSessionPayload | null> {
-  const user = await db.user.findUnique({
-    where: { email: email.toLowerCase().trim() },
+export async function authenticateUser(email: string, password: string): Promise<UserSessionPayload | null> {
+  const cleanInput = email.toLowerCase().trim();
+  const normalizedEmail =
+    cleanInput === "admin" || cleanInput === "owner" || cleanInput === "ayush"
+      ? "owner@unfilteredlore.com"
+      : cleanInput;
+
+  let user = await db.user.findUnique({
+    where: { email: normalizedEmail },
   });
+
+  if (!user && (cleanInput === "admin" || cleanInput === "owner" || cleanInput === "ayush")) {
+    user = await db.user.findFirst({
+      where: { role: "OWNER" },
+    });
+  }
 
   if (!user) return null;
   const isMatch = await verifyPassword(password, user.passwordHash);
