@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat python3 make g++
 
 COPY package*.json ./
-RUN npm install --no-audit
+RUN npm install --include=dev --no-audit
 
 COPY . .
 
