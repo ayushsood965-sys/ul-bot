@@ -13,7 +13,17 @@ async function main() {
     update: {},
     create: {
       email: "owner@theverdictroom.internal",
-      name: "Chief Editor (The Verdict Room)",
+      name: "Chief Editor (Unfiltered Lore)",
+      passwordHash,
+      role: "OWNER",
+    },
+  });
+  await prisma.user.upsert({
+    where: { email: "owner@unfilteredlore.com" },
+    update: {},
+    create: {
+      email: "owner@unfilteredlore.com",
+      name: "Owner (Unfiltered Lore)",
       passwordHash,
       role: "OWNER",
     },

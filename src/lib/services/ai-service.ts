@@ -209,8 +209,8 @@ export class AIService {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://theverdictroom.internal",
-        "X-Title": "The Verdict Room Studio",
+        "HTTP-Referer": "https://unfilteredlore.scholarhubhpu.in",
+        "X-Title": "Unfiltered Lore Studio",
       },
       body: JSON.stringify({
         model,
@@ -334,8 +334,8 @@ export class AIService {
     const targetPillar = params.pillar || "RELATIONSHIPS";
     const targetFormat = params.format || "THE_CASE";
 
-    const systemPrompt = `You are the lead editor of "${brand?.brandName || "The Verdict Room"}" - an anonymous, editorial-style online courtroom for Indian Gen Z.
-Tagline: "${brand?.tagline || "The Internet Is The Jury."}"
+    const systemPrompt = `You are the lead editor of "${brand?.brandName || "Unfiltered Lore"}" (@_unfiltered_lore_) - raw everyday lore, unfiltered opinions, and online courtroom verdicts for Indian Gen Z.
+Tagline: "${brand?.tagline || "Raw Everyday Lore & Unfiltered Verdicts."}"
 Voice: ${brand?.voiceTone || "Bold, intelligent, confident, witty, savage, culturally aware."}
 Target Audience: ${brand?.targetAudience || "Indian Gen Z, metro & tier-1/2 youth."}
 Rules:
@@ -384,8 +384,8 @@ Output a JSON array of objects adhering to this schema:
     isCarousel?: boolean;
   }) {
     const brand = await db.brandConfiguration.findFirst({ where: { isActive: true } });
-    const systemPrompt = `You are the chief editorial writer for "The Verdict Room" (@theverdictroom).
-Tagline: "The Internet Is The Jury."
+    const systemPrompt = `You are the chief editorial writer for "Unfiltered Lore" (@_unfiltered_lore_).
+Tagline: "${brand?.tagline || "Raw Everyday Lore & Unfiltered Verdicts."}"
 Audience: Indian Gen Z (18-26 years old).
 Language: English-first with natural, sophisticated Hinglish nuances (delulu, situationship, red flag, cooked, aura, bhai, yaar).
 Formatting requirements:
@@ -460,7 +460,7 @@ Output valid JSON matching this structure:
     caption: string;
     format: string;
   }) {
-    const prompt = `Evaluate this Instagram content draft for "The Verdict Room" (Indian Gen Z brand):
+    const prompt = `Evaluate this Instagram content draft for "Unfiltered Lore" (@_unfiltered_lore_, Indian Gen Z brand):
 Hook: "${post.hook}"
 Narrative: "${post.mainNarrative}"
 Caption: "${post.caption}"
@@ -490,7 +490,7 @@ Output JSON:
     originalText: string;
     instructions: string;
   }): Promise<string> {
-    const prompt = `You are the lead editor of The Verdict Room.
+    const prompt = `You are the lead editor of Unfiltered Lore (@_unfiltered_lore_).
 Component to rewrite: ${params.componentType}
 Original: "${params.originalText}"
 Revision Goal: "${params.instructions}"

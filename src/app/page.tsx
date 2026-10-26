@@ -121,7 +121,7 @@ export default function App() {
           <Gavel className="w-6 h-6 text-red-200" />
         </div>
         <p className="font-editorial-serif text-slate-400 text-sm">
-          Initializing The Verdict Room Studio...
+          Initializing Unfiltered Lore Studio...
         </p>
       </div>
     );
@@ -137,10 +137,10 @@ export default function App() {
               <Gavel className="w-6 h-6 text-red-200" />
             </div>
             <h1 className="font-editorial-serif text-2xl font-bold text-white tracking-tight">
-              The Verdict Room
+              Unfiltered Lore Studio
             </h1>
             <p className="text-xs text-red-400 font-editorial-mono font-semibold uppercase tracking-wider">
-              Internal Studio &amp; Automation Platform
+              @_unfiltered_lore_ Automation Platform
             </p>
           </div>
 

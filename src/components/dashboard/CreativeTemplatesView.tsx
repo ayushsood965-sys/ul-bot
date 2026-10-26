@@ -371,7 +371,7 @@ export function CreativeTemplatesView() {
             />
           </div>
           <p className="font-editorial-mono text-[11px] text-slate-500 mt-4">
-            Canvas: 1080 × 1350 px | 4:5 Portrait Ratio | The Verdict Room Official Template
+            Canvas: 1080 × 1350 px | 4:5 Portrait Ratio | Unfiltered Lore Official Template
           </p>
         </div>
       </div>
