@@ -5,8 +5,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Install openssl for Prisma and build tools
-RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
+# Install openssl for Prisma, ca-certificates, and build tools
+RUN apt-get update && apt-get install -y openssl ca-certificates python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Configure npm network timeouts and retry resilience
 RUN npm config set fetch-retries 5 \
@@ -16,9 +16,9 @@ RUN npm config set fetch-retries 5 \
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install dependencies and Linux x64 Tailwind oxide engine
-RUN npm install --include=dev --no-audit \
-    && npm install --include=dev --no-audit @tailwindcss/oxide-linux-x64-gnu@4.3.3
+# Install dependencies and Tailwind Linux oxide binary with ignore-scripts to avoid transient postinstall socket errors
+RUN npm install --include=dev --no-audit --ignore-scripts \
+    && npm install --include=dev --no-audit --ignore-scripts @tailwindcss/oxide-linux-x64-gnu@4.3.3
 
 COPY . .
 
