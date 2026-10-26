@@ -53,21 +53,8 @@ export function AnalyticsView() {
     );
   };
 
-  const trendData = data?.trendData?.length
-    ? data.trendData
-    : [
-        { date: "Oct 20", reach: 8400, shares: 320, saves: 280 },
-        { date: "Oct 21", reach: 9800, shares: 450, saves: 390 },
-        { date: "Oct 22", reach: 11200, shares: 520, saves: 440 },
-        { date: "Oct 23", reach: 13400, shares: 610, saves: 490 },
-        { date: "Oct 24", reach: 14280, shares: 680, saves: 520 },
-      ];
-
-  const pillarData = data?.pillarBreakdown || [
-    { name: "Relationships", shares: 4200, saves: 3100 },
-    { name: "Social Behaviour", shares: 3100, saves: 2400 },
-    { name: "Money & Modern", shares: 3800, saves: 3900 },
-  ];
+  const trendData = data?.trendData?.length ? data.trendData : [];
+  const pillarData = data?.pillarBreakdown?.length ? data.pillarBreakdown : [];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -103,39 +90,47 @@ export function AnalyticsView() {
           </h3>
           <p className="text-xs text-slate-500 mb-6">Daily account reach and story share virality</p>
 
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#23283B" opacity={0.3} />
-                <XAxis dataKey="date" stroke="#64748B" fontSize={11} />
-                <YAxis stroke="#64748B" fontSize={11} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#11131C",
-                    borderColor: "#23283B",
-                    borderRadius: "8px",
-                    color: "#FFFFFF",
-                    fontSize: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="reach"
-                  stroke="#DC2626"
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: "#DC2626" }}
-                  name="Reach"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="shares"
-                  stroke="#A855F7"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: "#A855F7" }}
-                  name="Shares"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full flex items-center justify-center">
+            {trendData.length === 0 ? (
+              <div className="text-center text-slate-400 text-xs px-6">
+                <TrendingUp className="w-8 h-8 mx-auto mb-2 text-slate-500 opacity-40" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No Telemetry Recorded Yet</p>
+                <p className="mt-1 text-slate-500">Live reach and shares will plot automatically as your published posts accumulate impressions on Instagram.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#23283B" opacity={0.3} />
+                  <XAxis dataKey="date" stroke="#64748B" fontSize={11} />
+                  <YAxis stroke="#64748B" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#11131C",
+                      borderColor: "#23283B",
+                      borderRadius: "8px",
+                      color: "#FFFFFF",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="reach"
+                    stroke="#DC2626"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: "#DC2626" }}
+                    name="Reach"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="shares"
+                    stroke="#A855F7"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "#A855F7" }}
+                    name="Shares"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -146,25 +141,33 @@ export function AnalyticsView() {
           </h3>
           <p className="text-xs text-slate-500 mb-6">Story shares vs bookmark saves per category</p>
 
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pillarData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#23283B" opacity={0.3} />
-                <XAxis dataKey="name" stroke="#64748B" fontSize={11} />
-                <YAxis stroke="#64748B" fontSize={11} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#11131C",
-                    borderColor: "#23283B",
-                    borderRadius: "8px",
-                    color: "#FFFFFF",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="shares" fill="#DC2626" radius={[4, 4, 0, 0]} name="Shares" />
-                <Bar dataKey="saves" fill="#14B8A6" radius={[4, 4, 0, 0]} name="Saves" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-64 w-full flex items-center justify-center">
+            {pillarData.every((p: any) => (p.shares || 0) === 0 && (p.saves || 0) === 0) ? (
+              <div className="text-center text-slate-400 text-xs px-6">
+                <Share2 className="w-8 h-8 mx-auto mb-2 text-slate-500 opacity-40" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No Engagement Recorded Yet</p>
+                <p className="mt-1 text-slate-500">Story shares and bookmark saves will be categorized across content pillars here.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pillarData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#23283B" opacity={0.3} />
+                  <XAxis dataKey="name" stroke="#64748B" fontSize={11} />
+                  <YAxis stroke="#64748B" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#11131C",
+                      borderColor: "#23283B",
+                      borderRadius: "8px",
+                      color: "#FFFFFF",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="shares" fill="#DC2626" radius={[4, 4, 0, 0]} name="Shares" />
+                  <Bar dataKey="saves" fill="#14B8A6" radius={[4, 4, 0, 0]} name="Saves" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

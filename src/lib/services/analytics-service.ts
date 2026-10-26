@@ -92,9 +92,9 @@ export class AnalyticsService {
       totalShares,
       totalSaves,
       engagementRate,
-      followerCount: account?.followerCount || 24850,
+      followerCount: account?.followerCount ?? 0,
       bestPerformingCategory: bestCategory,
-      isMockAccount: account?.isMockMode ?? true,
+      isMockAccount: account?.isMockMode ?? false,
       accountUsername: account?.username || "_unfiltered_lore_",
     };
   }
@@ -116,21 +116,43 @@ export class AnalyticsService {
       format: item.post?.format || "THE_CASE",
     }));
 
-    // Content Pillar Breakdown
-    const pillarBreakdown = [
-      { name: "Relationships & Dating", code: "RELATIONSHIPS", shares: 4200, saves: 3100, posts: 14 },
-      { name: "Social Behaviour & Ego", code: "SOCIAL_BEHAVIOUR", shares: 3100, saves: 2400, posts: 11 },
-      { name: "Money & Modern Life", code: "MONEY_MODERN_LIFE", shares: 3800, saves: 3900, posts: 9 },
+    // Dynamic Content Pillar Breakdown
+    const pillars = [
+      { name: "Relationships & Dating", code: "RELATIONSHIPS" },
+      { name: "Social Behaviour & Ego", code: "SOCIAL_BEHAVIOUR" },
+      { name: "Money & Modern Life", code: "MONEY_MODERN_LIFE" },
     ];
+    const pillarBreakdown = pillars.map((p) => {
+      const items = published.filter((item) => item.post?.pillar === p.code);
+      return {
+        name: p.name,
+        code: p.code,
+        shares: items.reduce((acc, curr) => acc + curr.latestShares, 0),
+        saves: items.reduce((acc, curr) => acc + curr.latestSaves, 0),
+        posts: items.length,
+      };
+    });
 
-    // Recurring Format Comparison
-    const formatBreakdown = [
-      { format: "The Case (Dilemmas)", savesRate: "28%", sharesRate: "34%", avgComments: 290 },
-      { format: "Aura Tax", savesRate: "19%", sharesRate: "42%", avgComments: 340 },
-      { format: "Unpopular Opinion", savesRate: "22%", sharesRate: "38%", avgComments: 410 },
-      { format: "Multi-Slide Carousel", savesRate: "44%", sharesRate: "31%", avgComments: 215 },
-      { format: "Two Sides", savesRate: "25%", sharesRate: "29%", avgComments: 260 },
+    // Dynamic Recurring Format Comparison
+    const formats = [
+      { format: "The Case (Dilemmas)", code: "THE_CASE" },
+      { format: "Aura Tax", code: "AURA_TAX" },
+      { format: "Unpopular Opinion", code: "UNPOPULAR_OPINION" },
+      { format: "Two Sides", code: "TWO_SIDES" },
     ];
+    const formatBreakdown = formats.map((f) => {
+      const items = published.filter((item) => item.post?.format === f.code);
+      const totalReach = items.reduce((acc, curr) => acc + curr.latestReach, 0);
+      const totalSaves = items.reduce((acc, curr) => acc + curr.latestSaves, 0);
+      const totalShares = items.reduce((acc, curr) => acc + curr.latestShares, 0);
+      const totalComments = items.reduce((acc, curr) => acc + curr.latestComments, 0);
+      return {
+        format: f.format,
+        savesRate: totalReach > 0 ? `${((totalSaves / totalReach) * 100).toFixed(1)}%` : "0%",
+        sharesRate: totalReach > 0 ? `${((totalShares / totalReach) * 100).toFixed(1)}%` : "0%",
+        avgComments: items.length > 0 ? Math.round(totalComments / items.length) : 0,
+      };
+    });
 
     // AI Strategic Recommendations (Learning Loop)
     const strategicInsights = [

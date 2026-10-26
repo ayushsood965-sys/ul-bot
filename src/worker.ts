@@ -61,6 +61,15 @@ async function runWorkerLoop() {
           console.warn("[Worker] Autonomous generation cycle skipped:", autoErr.message);
         }
       }
+
+      // Sync live Meta Instagram profile telemetry (followers, media count) every 30 cycles (~10 mins) or on startup
+      if (cycleCount === 1 || cycleCount % 30 === 0) {
+        try {
+          await MetaInstagramService.checkConnectionHealth();
+        } catch (healthErr: any) {
+          console.warn("[Worker] Instagram health telemetry sync skipped:", healthErr.message);
+        }
+      }
     } catch (err) {
       console.error("[Worker] Error in scheduler execution loop:", err);
     }

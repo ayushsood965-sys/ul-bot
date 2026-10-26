@@ -42,17 +42,17 @@ export function OverviewView({ onNavigate }: OverviewViewProps) {
   }, []);
 
   const overview = data?.overview || {
-    postsPublishedToday: 1,
-    postsScheduled: 2,
-    draftsAwaitingApproval: 1,
+    postsPublishedToday: 0,
+    postsScheduled: 0,
+    draftsAwaitingApproval: 0,
     generationFailures: 0,
     publishingFailures: 0,
-    totalReach: 14280,
-    totalShares: 680,
-    totalSaves: 520,
-    followerCount: 24850,
-    bestPerformingCategory: "RELATIONSHIPS",
-    isMockAccount: true,
+    totalReach: 0,
+    totalShares: 0,
+    totalSaves: 0,
+    followerCount: 0,
+    bestPerformingCategory: "None yet",
+    isMockAccount: false,
     accountUsername: "_unfiltered_lore_",
   };
 

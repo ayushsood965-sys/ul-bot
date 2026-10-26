@@ -423,60 +423,13 @@ async function main() {
       hashtags: JSON.stringify(["TheVerdictRoom", "Situationships", "DatingTruths", "UnpopularOpinion", "IndianGenZ"]),
       callToAction: "Defend your verdict in the comments.",
       suggestedTemplate: "UNPOPULAR_OPINION",
-      status: "PUBLISHED",
+      status: "APPROVED",
       qualityScore: 9.5,
       moderationStatus: "PASSED",
       isCarousel: false,
       slideCount: 1,
       contentFingerprint: "fp_opin_situationships_cowardice",
-      publishedAt: new Date(Date.now() - 3600 * 1000 * 18),
-      igMediaId: "1799283746592011",
-      igPermalink: "https://instagram.com/p/mock_opin_situationship",
       renderedAssetUrl: "/api/creative/render/TVR-2026-OPIN-003",
-    },
-  });
-
-  // 9. Published Media & Insights Snapshot
-  const pubMedia = await prisma.publishedMedia.create({
-    data: {
-      accountId: igAccount.id,
-      postId: post3.id,
-      igMediaId: "1799283746592011",
-      mediaType: "IMAGE",
-      permalink: "https://instagram.com/p/mock_opin_situationship",
-      caption: post3.caption,
-      publishedAt: new Date(Date.now() - 3600 * 1000 * 18),
-      latestReach: 14280,
-      latestImpressions: 19450,
-      latestLikes: 1840,
-      latestComments: 312,
-      latestShares: 680,
-      latestSaves: 520,
-      engagementRate: 23.4,
-      snapshots: {
-        create: [
-          {
-            capturedAt: new Date(Date.now() - 3600 * 1000 * 12),
-            reach: 6500,
-            impressions: 8900,
-            likes: 720,
-            comments: 110,
-            shares: 240,
-            saved: 180,
-            totalInteractions: 1250,
-          },
-          {
-            capturedAt: new Date(Date.now() - 3600 * 1000 * 2),
-            reach: 14280,
-            impressions: 19450,
-            likes: 1840,
-            comments: 312,
-            shares: 680,
-            saved: 520,
-            totalInteractions: 3352,
-          },
-        ],
-      },
     },
   });
 
