@@ -275,33 +275,41 @@ async function main() {
   });
   console.log("✔ System Settings initialized");
 
-  // 7. Instagram Account (Demo / Mock Connection Setup)
+  // 7. Instagram Account Setup
+  const hasLiveCreds = !!(
+    process.env.INSTAGRAM_ACCESS_TOKEN &&
+    !process.env.INSTAGRAM_ACCESS_TOKEN.startsWith("your_") &&
+    process.env.INSTAGRAM_ACCESS_TOKEN.length > 20
+  );
+  const igUserId = process.env.INSTAGRAM_ACCOUNT_ID || "17841472461715281";
+  const igUsername = process.env.INSTAGRAM_HANDLE?.replace("@", "") || "_unfiltered_lore_";
+
   await prisma.instagramAccount.deleteMany({});
   const igAccount = await prisma.instagramAccount.create({
     data: {
-      igUserId: "mock_17841400293849201",
-      username: "_unfiltered_lore_",
+      igUserId: hasLiveCreds ? igUserId : "mock_17841400293849201",
+      username: igUsername,
       accountName: "Unfiltered Lore (@_unfiltered_lore_)",
       profilePictureUrl: "/images/unfiltered-lore-avatar.png",
-      connectedPageId: "mock_page_1029384756",
+      connectedPageId: process.env.FACEBOOK_PAGE_ID || "1466178536573511",
       accountType: "BUSINESS",
-      followerCount: 24850,
-      mediaCount: 142,
-      status: "MOCK_ACTIVE",
-      isMockMode: true,
+      followerCount: 0,
+      mediaCount: 1,
+      status: "CONNECTED",
+      isMockMode: !hasLiveCreds,
       lastSyncAt: new Date(),
       tokenMetadata: {
         create: {
           tokenType: "PAGE_ACCESS_TOKEN",
-          accessTokenEncrypted: "mock_token_configured_for_development",
-          scopes: "instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement",
+          accessTokenEncrypted: process.env.INSTAGRAM_ACCESS_TOKEN || "mock_token_configured_for_development",
+          scopes: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
           isValid: true,
           expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
         },
       },
     },
   });
-  console.log("✔ Instagram Account initialized in safe DEMO/MOCK mode:", igAccount.username);
+  console.log(`✔ Instagram Account initialized (${hasLiveCreds ? "LIVE META GRAPH API" : "DEMO/MOCK"}):`, igAccount.username);
 
   // 8. Sample Content Ideas & High-Relatability Posts
   await prisma.contentPost.deleteMany({});

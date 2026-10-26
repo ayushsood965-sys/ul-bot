@@ -24,6 +24,7 @@ export function PublishingQueueView() {
   const [autoGenerating, setAutoGenerating] = useState<boolean>(false);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [filterTab, setFilterTab] = useState<"ALL" | "SCHEDULED" | "PUBLISHED" | "FAILED">("ALL");
 
   const fetchQueue = async () => {
     try {
@@ -46,8 +47,7 @@ export function PublishingQueueView() {
         const unqueued = postsData.posts.filter(
           (p: any) =>
             !activePostIds.has(p.id) &&
-            p.status !== "PUBLISHED" &&
-            (p.status === "APPROVED" || p.status === "DRAFT" || p.status === "NEEDS_REVIEW")
+            p.status !== "PUBLISHED"
         );
         setPendingPosts(unqueued);
       }
@@ -305,107 +305,166 @@ export function PublishingQueueView() {
 
       {/* Active Queue List Table */}
       <div className="bg-white dark:bg-[#11131C] border border-slate-200 dark:border-[#1E2333] rounded-xl overflow-hidden shadow-xs">
-        <div className="p-4 border-b border-slate-100 dark:border-[#1E2333] flex items-center justify-between">
-          <h3 className="font-editorial-serif text-base font-bold text-slate-900 dark:text-white">
-            Queued &amp; Recent Publishing Jobs ({jobs.length})
-          </h3>
-          <span className="text-xs text-slate-500 font-editorial-mono">
-            Rate Spacing: 300s between posts
-          </span>
-        </div>
-
-        {jobs.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-sm space-y-3">
-            <p>No publishing jobs currently queued.</p>
-            {pendingPosts.length > 0 ? (
-              <p className="text-xs text-blue-500 dark:text-blue-400 font-medium">
-                Tip: Click &quot;⚡ Add to Queue&quot; on any post above to schedule it immediately!
-              </p>
-            ) : (
-              <p className="text-xs text-slate-500">
-                Click &quot;🤖 Auto-Generate &amp; Queue Next Post&quot; above or head to AI Studio to brainstorm new content!
-              </p>
-            )}
+        <div className="p-4 border-b border-slate-100 dark:border-[#1E2333] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            <h3 className="font-editorial-serif text-base font-bold text-slate-900 dark:text-white">
+              Publishing Jobs ({jobs.length})
+            </h3>
+            <span className="text-xs text-slate-500 font-editorial-mono">
+              • Rate Spacing: 300s
+            </span>
           </div>
-        ) : (
-          <div className="divide-y divide-slate-100 dark:divide-[#1E2333]">
-            {jobs.map((job) => {
-              const isScheduled = job.status === "SCHEDULED";
-              const isPublished = job.status === "PUBLISHED";
-              const isFailed = job.status === "FAILED";
-              const isClaimed = job.status === "CLAIMED" || job.status === "PUBLISHING";
 
+          {/* Filter Tabs */}
+          <div className="flex items-center space-x-1 bg-slate-100 dark:bg-[#161824] p-1 rounded-lg text-xs font-semibold">
+            {(["ALL", "SCHEDULED", "PUBLISHED", "FAILED"] as const).map((tab) => {
+              const count =
+                tab === "ALL"
+                  ? jobs.length
+                  : jobs.filter((j) => (tab === "SCHEDULED" ? j.status === "SCHEDULED" || j.status === "CLAIMED" : j.status === tab)).length;
               return (
-                <div key={job.id} className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-[#151724] transition-colors">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-editorial-mono text-xs font-bold text-red-600">
-                        {job.jobId}
-                      </span>
-                      <span className="text-slate-400">•</span>
-                      <span className="font-editorial-mono text-xs text-slate-500">
-                        {job.post?.contentId}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isPublished
-                            ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300"
-                            : isScheduled
-                            ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300"
-                            : isClaimed
-                            ? "bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 animate-pulse"
-                            : isFailed
-                            ? "bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {job.status}
-                      </span>
-                    </div>
-
-                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {job.post?.title || "Untitled Post"}
-                    </h4>
-
-                    <div className="flex items-center space-x-4 text-xs text-slate-500 font-editorial-mono pt-1">
-                      <span>Scheduled: {new Date(job.scheduledFor).toLocaleString("en-IN")}</span>
-                      <span>Attempts: {job.attempts}/{job.maxAttempts}</span>
-                    </div>
-
-                    {job.lastError && (
-                      <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-2 rounded mt-2 font-mono">
-                        Error: {job.lastError}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2 shrink-0">
-                    {isScheduled && (
-                      <button
-                        onClick={() => handleAction("cancel", job.id)}
-                        disabled={actionInProgress === job.id}
-                        className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    )}
-
-                    {isFailed && (
-                      <button
-                        onClick={() => handleAction("retry", job.id)}
-                        disabled={actionInProgress === job.id}
-                        className="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 hover:bg-red-100 rounded-lg transition-colors flex items-center space-x-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>Retry</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <button
+                  key={tab}
+                  onClick={() => setFilterTab(tab)}
+                  className={`px-3 py-1 rounded-md transition-colors ${
+                    filterTab === tab
+                      ? "bg-white dark:bg-[#202434] text-red-600 dark:text-red-400 shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  {tab === "ALL" ? "All" : tab.charAt(0) + tab.slice(1).toLowerCase()} ({count})
+                </button>
               );
             })}
           </div>
-        )}
+        </div>
+
+        {(() => {
+          const filteredJobs = jobs.filter((j) => {
+            if (filterTab === "ALL") return true;
+            if (filterTab === "SCHEDULED") return j.status === "SCHEDULED" || j.status === "CLAIMED" || j.status === "PUBLISHING";
+            return j.status === filterTab;
+          });
+
+          if (filteredJobs.length === 0) {
+            return (
+              <div className="p-12 text-center text-slate-400 text-sm space-y-3">
+                <p>No jobs found in this tab.</p>
+                {pendingPosts.length > 0 ? (
+                  <p className="text-xs text-blue-500 dark:text-blue-400 font-medium">
+                    Tip: Click &quot;⚡ Add to Queue&quot; on any post above to schedule it immediately!
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Click &quot;🤖 Auto-Generate &amp; Queue Next Post&quot; above or head to AI Studio to brainstorm new content!
+                  </p>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="divide-y divide-slate-100 dark:divide-[#1E2333]">
+              {filteredJobs.map((job) => {
+                const isScheduled = job.status === "SCHEDULED";
+                const isPublished = job.status === "PUBLISHED";
+                const isFailed = job.status === "FAILED";
+                const isClaimed = job.status === "CLAIMED" || job.status === "PUBLISHING";
+
+                return (
+                  <div key={job.id} className="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-[#151724] transition-colors">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-editorial-mono text-xs font-bold text-red-600">
+                          {job.jobId}
+                        </span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-editorial-mono text-xs text-slate-500">
+                          {job.post?.contentId}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isPublished
+                              ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300"
+                              : isScheduled
+                              ? "bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300"
+                              : isClaimed
+                              ? "bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 animate-pulse"
+                              : isFailed
+                              ? "bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {job.status}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
+                        {job.post?.title || "Untitled Post"}
+                      </h4>
+
+                      <div className="flex items-center space-x-4 text-xs text-slate-500 font-editorial-mono pt-1">
+                        <span>Scheduled: {new Date(job.scheduledFor).toLocaleString("en-IN")}</span>
+                        <span>Attempts: {job.attempts}/{job.maxAttempts}</span>
+                      </div>
+
+                      {job.lastError && (
+                        <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-2 rounded mt-2 font-mono">
+                          Error: {job.lastError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      {isScheduled && (
+                        <>
+                          <button
+                            onClick={() => handlePublishPostDirectly(job.postId)}
+                            disabled={actionInProgress === job.postId}
+                            className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white font-semibold text-xs rounded-lg transition-colors flex items-center space-x-1 shadow-xs"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>Publish Now</span>
+                          </button>
+                          <button
+                            onClick={() => handleAction("cancel", job.id)}
+                            disabled={actionInProgress === job.id}
+                            className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-red-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+
+                      {isPublished && (
+                        <a
+                          href={job.post?.igPermalink || `https://instagram.com/p/${job.post?.igMediaId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 text-xs font-semibold rounded-lg flex items-center space-x-1 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>View on Instagram</span>
+                        </a>
+                      )}
+
+                      {isFailed && (
+                        <button
+                          onClick={() => handleAction("retry", job.id)}
+                          disabled={actionInProgress === job.id}
+                          className="px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 hover:bg-red-100 rounded-lg transition-colors flex items-center space-x-1"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Retry</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -224,6 +224,7 @@ export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
       const data = await res.json();
       if (data.success) {
         setGeneratedPost((prev: any) => ({ ...prev, status: "SCHEDULED" }));
+        setQueuedNotice(generatedPost.title);
         setSavingStatus(`✔ Added to Publishing Queue! Scheduled for ${scheduledTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`);
       } else {
         setSavingStatus(`Error: ${data.error}`);

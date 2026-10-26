@@ -163,8 +163,8 @@ export class MetaInstagramService {
     caption: string;
     postId?: string;
   }): Promise<PublishResult> {
-    const activeAccount = await db.instagramAccount.findFirst();
-    const isMock = activeAccount ? activeAccount.isMockMode : !this.isCredentialsConfigured();
+    const hasLiveCreds = this.isCredentialsConfigured();
+    const isMock = !hasLiveCreds;
 
     if (isMock) {
       const mockMediaId = `mock_ig_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -216,6 +216,14 @@ export class MetaInstagramService {
 
       const mediaId = pubData.id;
 
+      // Retrieve public Instagram permalink
+      let permalink = `https://instagram.com/p/${mediaId}`;
+      try {
+        const permRes = await fetch(`${this.baseUrl}/${mediaId}?fields=permalink&access_token=${token}`);
+        const permData = await permRes.json();
+        if (permData?.permalink) permalink = permData.permalink;
+      } catch {}
+
       recordAuditLog({
         action: "INSTAGRAM_POST_PUBLISHED_REAL",
         category: "PUBLISH",
@@ -226,7 +234,7 @@ export class MetaInstagramService {
       return {
         success: true,
         mediaId,
-        permalink: `https://instagram.com/p/${mediaId}`,
+        permalink,
         isMock: false,
       };
     } catch (err: any) {
@@ -251,8 +259,8 @@ export class MetaInstagramService {
     caption: string;
     postId?: string;
   }): Promise<PublishResult> {
-    const activeAccount = await db.instagramAccount.findFirst();
-    const isMock = activeAccount ? activeAccount.isMockMode : !this.isCredentialsConfigured();
+    const hasLiveCreds = this.isCredentialsConfigured();
+    const isMock = !hasLiveCreds;
 
     if (isMock) {
       const mockMediaId = `mock_carousel_${Date.now()}`;
@@ -319,10 +327,19 @@ export class MetaInstagramService {
       }
 
       const mediaId = pubData.id;
+
+      // Retrieve public Instagram permalink
+      let permalink = `https://instagram.com/p/${mediaId}`;
+      try {
+        const permRes = await fetch(`${this.baseUrl}/${mediaId}?fields=permalink&access_token=${token}`);
+        const permData = await permRes.json();
+        if (permData?.permalink) permalink = permData.permalink;
+      } catch {}
+
       return {
         success: true,
         mediaId,
-        permalink: `https://instagram.com/p/${mediaId}`,
+        permalink,
         isMock: false,
       };
     } catch (err: any) {
