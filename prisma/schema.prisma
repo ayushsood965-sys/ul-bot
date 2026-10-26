@@ -1,0 +1,406 @@
+// The Verdict Room Studio - Prisma Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String             @id @default(uuid())
+  email        String             @unique
+  passwordHash String
+  name         String
+  role         String             @default("OWNER") // OWNER, EDITOR, VIEWER
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  auditLogs    AuditLog[]
+  reviews      ModerationReview[]
+}
+
+model BrandConfiguration {
+  id                         String   @id @default(uuid())
+  brandName                  String   @default("The Verdict Room")
+  tagline                    String   @default("The Internet Is The Jury.")
+  voiceTone                  String   @default("Bold, intelligent, confident, witty, savage, culturally aware")
+  targetAudience             String   @default("Indian Gen Z, metro & tier-1/2 youth")
+  languageMode               String   @default("English-first with natural conversational Hinglish")
+  pillarRelationshipsWeight  Int      @default(40)
+  pillarSocialBehaviourWeight Int     @default(30)
+  pillarMoneyModernLifeWeight Int     @default(30)
+  slangVocabulary            String   @default("[\"situationship\",\"delulu\",\"red flag\",\"green flag\",\"cooked\",\"aura\",\"ghosting\",\"breadcrumbing\",\"main character energy\",\"toxic trait\"]")
+  forbiddenPhrases           String   @default("[\"In today's fast-paced world\",\"Unlock your potential\",\"Remember to follow and share\",\"Hey guys welcome back\"]")
+  isActive                   Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+model AIProviderConfiguration {
+  id                   String   @id @default(uuid())
+  providerName         String   // "gemini", "openrouter", "openai_compatible"
+  displayName          String
+  apiBaseUrl           String   @default("https://generativelanguage.googleapis.com")
+  apiKeyEncrypted      String   @default("")
+  primaryModel         String   @default("gemini-2.5-flash")
+  evaluationModel      String   @default("gemini-2.5-flash")
+  moderationModel      String   @default("gemini-2.5-flash")
+  maxOutputTokens      Int      @default(2048)
+  temperature          Float    @default(0.7)
+  timeoutMs            Int      @default(30000)
+  retryPolicy          String   @default("{\"maxRetries\": 3, \"backoffMs\": 1500}")
+  monthlyBudgetUsd     Float    @default(50.0)
+  currentMonthSpendUsd Float    @default(0.0)
+  isFallbackEnabled    Boolean  @default(true)
+  fallbackModel        String   @default("deepseek/deepseek-chat")
+  isActive             Boolean  @default(true)
+  isPrimary            Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model ContentIdea {
+  id                String       @id @default(uuid())
+  title             String
+  pillar            String       // "RELATIONSHIPS", "SOCIAL_BEHAVIOUR", "MONEY_MODERN_LIFE"
+  format            String       // "THE_CASE", "UNPOPULAR_OPINION", "ANONYMOUS_CONFESSION", "PEOPLE_HAVE_SPOKEN", "AURA_TAX", "TWO_SIDES"
+  premise           String
+  hook              String
+  scoreHook         Float        @default(8.5)
+  scoreRelatability Float        @default(9.0)
+  scoreDebate       Float        @default(9.2)
+  scoreOriginality  Float        @default(8.0)
+  overallScore      Float        @default(8.7)
+  fingerprint       String       @unique
+  status            String       @default("SUGGESTED") // "SUGGESTED", "ACCEPTED", "REJECTED", "CONVERTED"
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  posts             ContentPost[]
+}
+
+model ContentPost {
+  id                   String                    @id @default(uuid())
+  contentId            String                    @unique // e.g. "TVR-2026-CASE-001"
+  ideaId               String?
+  idea                 ContentIdea?              @relation(fields: [ideaId], references: [id])
+  title                String
+  pillar               String                    // "RELATIONSHIPS", "SOCIAL_BEHAVIOUR", "MONEY_MODERN_LIFE"
+  format               String                    // "THE_CASE", "UNPOPULAR_OPINION", "ANONYMOUS_CONFESSION", "PEOPLE_HAVE_SPOKEN", "AURA_TAX", "TWO_SIDES"
+  primaryLanguage      String                    @default("en-IN")
+  targetAudience       String                    @default("Indian Gen Z")
+  hook                 String
+  mainNarrative        String
+  caption              String
+  hashtags             String                    // JSON array string
+  callToAction         String
+  suggestedTemplate    String                    @default("THE_COURTROOM")
+  optionsJson          String?                   // For THE_CASE (options A, B, C, D)
+  sideAJson            String?                   // For TWO_SIDES
+  sideBJson            String?                   // For TWO_SIDES
+  auraPoints           Int?                      // For AURA_TAX (-1000 or +1000)
+  status               String                    @default("DRAFT") // DRAFT, GENERATED, VALIDATING, NEEDS_REVIEW, APPROVED, SCHEDULED, PUBLISHING, PUBLISHED, GENERATION_FAILED, VALIDATION_FAILED, PUBLISH_FAILED, CANCELLED
+  qualityScore         Float                     @default(0.0)
+  moderationStatus     String                    @default("PENDING") // PENDING, PASSED, FLAGGED, REJECTED, BYPASSED
+  isCarousel           Boolean                   @default(false)
+  slideCount           Int                       @default(1)
+  contentFingerprint   String
+  scheduledPublishAt   DateTime?
+  publishedAt          DateTime?
+  igMediaId            String?
+  igPermalink          String?
+  renderedAssetUrl     String?
+  renderedThumbnailUrl String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  slides               ContentSlide[]
+  mediaAssets          MediaAsset[]
+  publishingJobs       PublishingJob[]
+  evaluations          ContentQualityEvaluation[]
+  reviews              ModerationReview[]
+  generationRuns       ContentGenerationRun[]
+  publishedMedia       PublishedMedia[]
+
+  @@index([status])
+  @@index([pillar])
+  @@index([format])
+  @@index([scheduledPublishAt])
+}
+
+model ContentSlide {
+  id              String       @id @default(uuid())
+  postId          String
+  post            ContentPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  slideIndex      Int
+  slideType       String       // "COVER", "CONTEXT", "ARGUMENT_A", "ARGUMENT_B", "OPTIONS", "PROMPT"
+  headline        String
+  subtext         String
+  badgeText       String?
+  bodyText        String
+  accentColor     String?
+  renderedImageUrl String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([postId, slideIndex])
+}
+
+model CreativeTemplate {
+  id           String   @id @default(uuid())
+  code         String   @unique // "THE_COURTROOM", "UNPOPULAR_OPINION", "AURA_TAX", "TWO_SIDES", "MULTI_SLIDE_CAROUSEL"
+  name         String
+  description  String
+  canvasWidth  Int      @default(1080)
+  canvasHeight Int      @default(1350)
+  aspectRatio  String   @default("4:5")
+  themeJson    String   // Font sizes, colors, stamps, spacing
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MediaAsset {
+  id            String       @id @default(uuid())
+  postId        String?
+  post          ContentPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  slideId       String?
+  filePath      String
+  publicUrl     String
+  mimeType      String       @default("image/png")
+  width         Int          @default(1080)
+  height        Int          @default(1350)
+  fileSizeBytes Int          @default(0)
+  isThumbnail   Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+
+  @@index([postId])
+}
+
+model ContentGenerationRun {
+  id               String       @id @default(uuid())
+  postId           String?
+  post             ContentPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  providerId       String?
+  modelUsed        String
+  promptTokens     Int          @default(0)
+  completionTokens Int          @default(0)
+  estimatedCostUsd Float        @default(0.0)
+  latencyMs        Int          @default(0)
+  status           String       @default("SUCCESS") // "SUCCESS", "FAILED", "FALLBACK_TRIGGERED"
+  errorDetails     String?
+  createdAt        DateTime     @default(now())
+
+  @@index([postId])
+}
+
+model ContentQualityEvaluation {
+  id                String      @id @default(uuid())
+  postId            String
+  post              ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  overallScore      Float
+  hookClarity       Float
+  genZRelatability  Float
+  debatePotential   Float
+  brandVoiceFit     Float
+  readabilityScore  Float
+  feedbackNotes     String
+  passedThreshold   Boolean     @default(true)
+  evaluatedAt       DateTime    @default(now())
+
+  @@index([postId])
+}
+
+model ModerationReview {
+  id               String      @id @default(uuid())
+  postId           String
+  post             ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  status           String      @default("PENDING") // PENDING, APPROVED, REJECTED, REDACTED
+  flagReasons      String      @default("[]") // JSON array string
+  redactionNotes   String?
+  reviewedByUserId String?
+  reviewedByUser   User?       @relation(fields: [reviewedByUserId], references: [id])
+  reviewedAt       DateTime?
+  createdAt        DateTime    @default(now())
+
+  @@index([postId])
+}
+
+model PublishingSchedule {
+  id         String   @id @default(uuid())
+  slotLabel  String   // "Morning Slot", "Late Morning", "Afternoon", "Evening", "Late Evening"
+  slotTime   String   // "09:30", "12:30", "15:30", "18:30", "21:30"
+  daysOfWeek String   @default("ALL")
+  timezone   String   @default("Asia/Kolkata")
+  isEnabled  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model PublishingJob {
+  id              String      @id @default(uuid())
+  jobId           String      @unique
+  postId          String
+  post            ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  scheduledFor    DateTime
+  claimedAt       DateTime?
+  claimedByWorker String?
+  status          String      @default("SCHEDULED") // SCHEDULED, CLAIMED, PUBLISHING, PUBLISHED, FAILED, CANCELLED
+  attempts        Int         @default(0)
+  maxAttempts     Int         @default(3)
+  lastError       String?
+  nextRetryAt     DateTime?
+  idempotencyKey  String      @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([postId])
+}
+
+model InstagramAccount {
+  id                String             @id @default(uuid())
+  igUserId          String             @unique
+  username          String
+  accountName       String?
+  profilePictureUrl String?
+  connectedPageId   String?
+  accountType       String             @default("BUSINESS")
+  followerCount     Int                @default(0)
+  mediaCount        Int                @default(0)
+  status            String             @default("CONNECTED") // CONNECTED, EXPIRED, REVOKED, MOCK_ACTIVE
+  isMockMode        Boolean            @default(false)
+  lastSyncAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  tokenMetadata     MetaTokenMetadata?
+  publishedMedia    PublishedMedia[]
+}
+
+model MetaTokenMetadata {
+  id                   String           @id @default(uuid())
+  accountId            String           @unique
+  account              InstagramAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenType            String           @default("PAGE_ACCESS_TOKEN")
+  accessTokenEncrypted String
+  expiresAt            DateTime?
+  scopes               String           @default("instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement")
+  isValid              Boolean          @default(true)
+  lastCheckedAt        DateTime         @default(now())
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model PublishedMedia {
+  id                 String                 @id @default(uuid())
+  accountId          String
+  account            InstagramAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  postId             String?
+  post               ContentPost?           @relation(fields: [postId], references: [id], onDelete: SetNull)
+  igMediaId          String                 @unique
+  mediaType          String                 @default("IMAGE") // "IMAGE", "CAROUSEL_ALBUM", "VIDEO"
+  permalink          String?
+  caption            String?
+  publishedAt        DateTime
+  latestReach        Int                    @default(0)
+  latestImpressions  Int                    @default(0)
+  latestLikes        Int                    @default(0)
+  latestComments     Int                    @default(0)
+  latestShares       Int                    @default(0)
+  latestSaves        Int                    @default(0)
+  engagementRate     Float                  @default(0.0)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  snapshots          MediaInsightSnapshot[]
+
+  @@index([accountId])
+  @@index([publishedAt])
+}
+
+model MediaInsightSnapshot {
+  id                 String         @id @default(uuid())
+  publishedMediaId   String
+  publishedMedia     PublishedMedia @relation(fields: [publishedMediaId], references: [id], onDelete: Cascade)
+  capturedAt         DateTime       @default(now())
+  reach              Int            @default(0)
+  impressions        Int            @default(0)
+  likes              Int            @default(0)
+  comments           Int            @default(0)
+  shares             Int            @default(0)
+  saved              Int            @default(0)
+  totalInteractions  Int            @default(0)
+
+  @@index([publishedMediaId, capturedAt])
+}
+
+model AudiencePoll {
+  id         String               @id @default(uuid())
+  postId     String?
+  question   String
+  totalVotes Int                  @default(0)
+  status     String               @default("ACTIVE")
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  options    AudiencePollOption[]
+}
+
+model AudiencePollOption {
+  id             String             @id @default(uuid())
+  pollId         String
+  poll           AudiencePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionKey      String             // "A", "B", "C", "D"
+  optionLabel    String
+  voteCount      Int                @default(0)
+  votePercentage Float              @default(0.0)
+  votes          AudiencePollVote[]
+
+  @@index([pollId])
+}
+
+model AudiencePollVote {
+  id                 String             @id @default(uuid())
+  optionId           String
+  option             AudiencePollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  anonymousVoterHash String
+  votedAt            DateTime           @default(now())
+
+  @@index([optionId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  category   String   // "AI_GEN", "EDITORIAL", "SCHEDULE", "PUBLISH", "CONFIG", "AUTH", "MODERATION"
+  details    String
+  actorId    String?
+  actorEmail String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  ipAddress  String?
+  severity   String   @default("INFO") // INFO, WARNING, ERROR, CRITICAL
+  createdAt  DateTime @default(now())
+
+  @@index([category, createdAt])
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model UsageRecord {
+  id               String   @id @default(uuid())
+  provider         String
+  model            String
+  operation        String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  costUsd          Float    @default(0.0)
+  success          Boolean  @default(true)
+  timestamp        DateTime @default(now())
+
+  @@index([provider, timestamp])
+}
