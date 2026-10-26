@@ -2,6 +2,9 @@ FROM node:22-slim AS base
 
 WORKDIR /app
 
+# Force development environment during build so npm never prunes build dependencies
+ENV NODE_ENV=development
+
 # Install openssl for Prisma and build tools
 RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 
@@ -13,11 +16,9 @@ RUN npm config set fetch-retries 5 \
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install project dependencies
-RUN npm install --include=dev --no-audit
-
-# Explicitly install Linux x64 native binary for Tailwind CSS v4 oxide engine
-RUN npm install --no-audit @tailwindcss/oxide-linux-x64-gnu@4.3.3
+# Install project dependencies and Linux x64 Tailwind oxide engine
+RUN npm install --include=dev --no-audit \
+    && npm install --include=dev --no-audit @tailwindcss/oxide-linux-x64-gnu@4.3.3
 
 COPY . .
 
