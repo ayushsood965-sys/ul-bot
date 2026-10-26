@@ -27,7 +27,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [loginEmail, setLoginEmail] = useState<string>("owner@unfilteredlore.com");
-  const [loginPassword, setLoginPassword] = useState<string>("Ayush1994*");
+  const [loginPassword, setLoginPassword] = useState<string>("");
   const [loginError, setLoginError] = useState<string>("");
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
@@ -142,15 +142,6 @@ export default function App() {
             <p className="text-xs text-red-400 font-editorial-mono font-semibold uppercase tracking-wider">
               @_unfiltered_lore_ Automation Platform
             </p>
-          </div>
-
-          <div className="p-3 bg-red-950/20 border border-red-900/40 rounded-xl text-xs text-red-300">
-            <span className="font-bold">Dashboard Credentials (Pre-filled):</span>
-            <div className="font-mono text-[11px] text-slate-300 mt-1">
-              Username: owner@unfilteredlore.com
-              <br />
-              Password: Ayush1994*
-            </div>
           </div>
 
           {loginError && (
