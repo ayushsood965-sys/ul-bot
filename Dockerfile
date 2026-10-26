@@ -22,8 +22,8 @@ RUN npm install --include=dev --no-audit \
 
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Generate Prisma Client and initialize schema tables for build-time evaluation
+RUN npx prisma generate && npx prisma db push --skip-generate
 
 # Build Next.js application
 RUN npm run build
