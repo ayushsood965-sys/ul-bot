@@ -18,7 +18,7 @@ COPY package*.json ./
 
 # Install dependencies and Tailwind Linux oxide binary with ignore-scripts to avoid transient postinstall socket errors
 RUN npm install --include=dev --no-audit --ignore-scripts \
-    && npm install --include=dev --no-audit --ignore-scripts @tailwindcss/oxide-linux-x64-gnu@4.3.3
+    && npm install --include=dev --no-audit --ignore-scripts @tailwindcss/oxide-linux-x64-gnu@4.3.3 @resvg/resvg-js-linux-x64-gnu@2.6.2
 
 COPY . .
 

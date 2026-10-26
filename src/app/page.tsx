@@ -244,7 +244,9 @@ export default function App() {
         {/* View Router */}
         <main className="flex-1 overflow-y-auto p-8">
           {activeTab === "overview" && <OverviewView onNavigate={setActiveTab} />}
-          {activeTab === "ai_studio" && <AIStudioView />}
+          {activeTab === "ai_studio" && (
+            <AIStudioView onNavigateToQueue={() => setActiveTab("publishing_queue")} />
+          )}
           {activeTab === "calendar" && <ContentCalendarView />}
           {activeTab === "creative_templates" && <CreativeTemplatesView />}
           {activeTab === "publishing_queue" && <PublishingQueueView />}

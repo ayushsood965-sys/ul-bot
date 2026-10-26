@@ -44,9 +44,9 @@ model AIProviderConfiguration {
   displayName          String
   apiBaseUrl           String   @default("https://generativelanguage.googleapis.com")
   apiKeyEncrypted      String   @default("")
-  primaryModel         String   @default("gemini-2.5-flash")
-  evaluationModel      String   @default("gemini-2.5-flash")
-  moderationModel      String   @default("gemini-2.5-flash")
+  primaryModel         String   @default("gemini-3.6-flash")
+  evaluationModel      String   @default("gemini-3.6-flash")
+  moderationModel      String   @default("gemini-3.6-flash")
   maxOutputTokens      Int      @default(2048)
   temperature          Float    @default(0.7)
   timeoutMs            Int      @default(30000)

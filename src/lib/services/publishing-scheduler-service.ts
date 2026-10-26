@@ -121,8 +121,11 @@ export class PublishingSchedulerService {
           data: { status: "PUBLISHING" },
         });
 
-        // Determine image URL or carousel URLs
-        const appUrl = process.env.APP_URL || "http://localhost:3000";
+        // Determine image URL or carousel URLs (ensure public domain for Meta Graph API)
+        const appUrl =
+          process.env.APP_URL && !process.env.APP_URL.includes("localhost")
+            ? process.env.APP_URL
+            : "https://unfilteredlore.scholarhubhpu.in";
         let publishRes;
 
         if (job.post.isCarousel && job.post.slides.length > 1) {
@@ -245,13 +248,13 @@ export class PublishingSchedulerService {
   }
 
   // Autonomous content generation & queue scheduling
-  public static async autoGenerateNextPost(): Promise<{ success: boolean; post?: any; job?: any; message: string }> {
+  public static async autoGenerateNextPost(options?: { force?: boolean }): Promise<{ success: boolean; post?: any; job?: any; message: string }> {
     if (await this.isPublishingPaused()) {
       return { success: false, message: "Publishing is paused by emergency stop." };
     }
 
     const genEnabled = await db.systemSetting.findUnique({ where: { key: "automation_generation_enabled" } });
-    if (genEnabled?.value === "false") {
+    if (genEnabled?.value === "false" && !options?.force) {
       return { success: false, message: "Automation content generation is disabled in settings." };
     }
 
@@ -268,7 +271,7 @@ export class PublishingSchedulerService {
       },
     });
 
-    if (postsToday >= dailyTarget) {
+    if (!options?.force && postsToday >= dailyTarget) {
       return { success: false, message: `Daily target of ${dailyTarget} posts already reached today (${postsToday} created).` };
     }
 

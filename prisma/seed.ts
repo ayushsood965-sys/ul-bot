@@ -76,12 +76,12 @@ async function main() {
   await prisma.aIProviderConfiguration.create({
     data: {
       providerName: "gemini",
-      displayName: "Google Gemini 2.5 Flash (Primary)",
+      displayName: "Google Gemini 3.6 Flash (Primary)",
       apiBaseUrl: "https://generativelanguage.googleapis.com",
       apiKeyEncrypted: "",
-      primaryModel: "gemini-2.5-flash",
-      evaluationModel: "gemini-2.5-flash",
-      moderationModel: "gemini-2.5-flash",
+      primaryModel: "gemini-3.6-flash",
+      evaluationModel: "gemini-3.6-flash",
+      moderationModel: "gemini-3.6-flash",
       maxOutputTokens: 2048,
       temperature: 0.7,
       timeoutMs: 25000,

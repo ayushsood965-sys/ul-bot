@@ -95,6 +95,42 @@ export interface ProviderRequestOptions {
   systemPrompt?: string;
 }
 
+// Robust JSON extraction and sanitization utility for LLM outputs
+export function cleanAndParseJson<T>(rawText: string, isArray: boolean = false): T {
+  let cleaned = (rawText || "").trim();
+
+  // Strip markdown code fences (e.g. ```json ... ``` or ``` ...)
+  if (cleaned.includes("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  }
+
+  // 1. Direct JSON parse
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // 2. Extract JSON block (array or object)
+    const match = isArray ? cleaned.match(/\[[\s\S]*\]/) : cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      const extracted = match[0].trim();
+      try {
+        return JSON.parse(extracted);
+      } catch {
+        // 3. Sanitize trailing commas and smart quotes
+        const sanitized = extracted
+          .replace(/,\s*([\]}])/g, "$1")
+          .replace(/[\u201C\u201D]/g, '"')
+          .replace(/[\u2018\u2019]/g, "'");
+        try {
+          return JSON.parse(sanitized);
+        } catch (err: any) {
+          throw new Error(`Failed to parse AI JSON response: ${err.message}`);
+        }
+      }
+    }
+    throw new Error(`No JSON ${isArray ? "array" : "object"} found in AI response: ${cleaned.slice(0, 150)}`);
+  }
+}
+
 // Low-level LLM caller supporting Google Gemini & OpenRouter/OpenAI-compatible APIs
 export class AIService {
   private static async getProviderConfig(providerName: "gemini" | "openrouter") {
@@ -113,11 +149,21 @@ export class AIService {
       process.env.GEMINI_API_KEY ||
       geminiDbConfig?.apiKeyEncrypted ||
       "";
+
+    // Disregard deprecated or invalid legacy seed models like gemini-2.5-flash
+    const dbModel =
+      geminiDbConfig?.primaryModel &&
+      geminiDbConfig.primaryModel !== "gemini-2.5-flash" &&
+      geminiDbConfig.primaryModel !== "gemini-2.0-flash" &&
+      geminiDbConfig.primaryModel !== "gemini-1.5-flash"
+        ? geminiDbConfig.primaryModel
+        : undefined;
+
     const model =
       options.model ||
-      geminiDbConfig?.primaryModel ||
       process.env.GEMINI_MODEL ||
-      "gemini-2.5-flash";
+      dbModel ||
+      "gemini-3.6-flash";
 
     if (!apiKey || apiKey.startsWith("your_")) {
       throw new Error("Missing or invalid GEMINI_API_KEY");
@@ -168,7 +214,11 @@ export class AIService {
 
     const data = await res.json();
     const candidate = data.candidates?.[0];
-    const text = candidate?.content?.parts?.[0]?.text || "";
+    const parts = candidate?.content?.parts || [];
+
+    // Filter out thinking parts if using a thinking/reasoning model
+    const nonThoughtPart = parts.find((p: any) => !p.thought && typeof p.text === "string" && p.text.trim().length > 0);
+    const text = nonThoughtPart?.text || parts[parts.length - 1]?.text || "";
     const promptTokens = data.usageMetadata?.promptTokenCount || 200;
     const completionTokens = data.usageMetadata?.candidatesTokenCount || 300;
 
@@ -187,8 +237,8 @@ export class AIService {
       "";
     const model =
       options.model ||
-      openRouterDbConfig?.primaryModel ||
       process.env.OPENROUTER_PRIMARY_MODEL ||
+      openRouterDbConfig?.primaryModel ||
       "deepseek/deepseek-chat";
 
     if (!apiKey || apiKey.startsWith("your_")) {
@@ -362,15 +412,7 @@ Output a JSON array of objects adhering to this schema:
 ]`;
 
     const response = await this.executeWithFallback(prompt, { systemPrompt });
-    let rawJson: any;
-    try {
-      rawJson = JSON.parse(response.text);
-    } catch {
-      const match = response.text.match(/\[[\s\S]*\]/);
-      if (match) rawJson = JSON.parse(match[0]);
-      else throw new Error("Could not parse JSON array from AI output");
-    }
-
+    const rawJson = cleanAndParseJson<any>(response.text, true);
     const ideas = z.array(ContentIdeaSchema).parse(rawJson);
     return { ideas, meta: response };
   }
@@ -440,15 +482,7 @@ Output valid JSON matching this structure:
 }`;
 
     const response = await this.executeWithFallback(prompt, { systemPrompt });
-    let rawJson: any;
-    try {
-      rawJson = JSON.parse(response.text);
-    } catch {
-      const match = response.text.match(/\{[\s\S]*\}/);
-      if (match) rawJson = JSON.parse(match[0]);
-      else throw new Error("Could not parse JSON object from AI output");
-    }
-
+    const rawJson = cleanAndParseJson<any>(response.text, false);
     const post = StructuredContentPostSchema.parse(rawJson);
     return { post, meta: response };
   }
@@ -480,7 +514,7 @@ Output JSON:
 }`;
 
     const response = await this.executeWithFallback(prompt, { temperature: 0.3 });
-    const rawJson = JSON.parse(response.text.match(/\{[\s\S]*\}/)?.[0] || response.text);
+    const rawJson = cleanAndParseJson<any>(response.text, false);
     return QualityEvaluationSchema.parse(rawJson);
   }
 

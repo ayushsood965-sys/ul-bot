@@ -156,7 +156,11 @@ export function PublishingQueueView() {
     try {
       setAutoGenerating(true);
       setStatusMessage("🤖 AI generating new post and queuing...");
-      const res = await fetch("/api/automation/auto-generate", { method: "POST" });
+      const res = await fetch("/api/automation/auto-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force: true }),
+      });
       const data = await res.json();
       if (data.success) {
         setStatusMessage(`✔ AI successfully created & queued: "${data.post?.title}"`);

@@ -18,7 +18,11 @@ import {
   Clock,
 } from "lucide-react";
 
-export function AIStudioView() {
+interface AIStudioViewProps {
+  onNavigateToQueue?: () => void;
+}
+
+export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
   const [pillar, setPillar] = useState<string>("RELATIONSHIPS");
   const [format, setFormat] = useState<string>("THE_CASE");
   const [isCarousel, setIsCarousel] = useState<boolean>(false);
@@ -28,6 +32,8 @@ export function AIStudioView() {
   const [ideas, setIdeas] = useState<any[]>([]);
 
   const [generatingPost, setGeneratingPost] = useState<boolean>(false);
+  const [quickQueuingIdeaId, setQuickQueuingIdeaId] = useState<string | null>(null);
+  const [queuedNotice, setQueuedNotice] = useState<string | null>(null);
   const [generatedPost, setGeneratedPost] = useState<any>(null);
   const [moderationInfo, setModerationInfo] = useState<any>(null);
 
@@ -38,6 +44,7 @@ export function AIStudioView() {
   const handleGenerateIdeas = async () => {
     try {
       setLoadingIdeas(true);
+      setQueuedNotice(null);
       const res = await fetch("/api/content/ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,6 +68,7 @@ export function AIStudioView() {
     try {
       setGeneratingPost(true);
       setSavingStatus("");
+      setQueuedNotice(null);
       const res = await fetch("/api/content/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,6 +91,56 @@ export function AIStudioView() {
       alert(err.message);
     } finally {
       setGeneratingPost(false);
+    }
+  };
+
+  // Step 2b: Quick Build & Add directly to Publishing Queue
+  const handleQuickBuildAndQueue = async (idea: any) => {
+    try {
+      setQuickQueuingIdeaId(idea.title);
+      setSavingStatus("Building post with AI...");
+      const res = await fetch("/api/content/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ideaId: idea.id,
+          premise: idea.premise,
+          pillar,
+          format,
+          isCarousel,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success || !data.post) {
+        throw new Error(data.error || "Failed to generate structured post");
+      }
+
+      setGeneratedPost(data.post);
+      setModerationInfo(data.moderation);
+
+      setSavingStatus("Scheduling into Publishing Queue...");
+      const scheduledTime = new Date(Date.now() + 5 * 60 * 1000);
+      const schedRes = await fetch("/api/publishing/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: data.post.id,
+          scheduledFor: scheduledTime.toISOString(),
+        }),
+      });
+      const schedData = await schedRes.json();
+      if (schedData.success) {
+        setGeneratedPost((prev: any) => ({ ...prev, status: "SCHEDULED" }));
+        setQueuedNotice(data.post.title);
+        setSavingStatus(`✔ Post created & queued for ${scheduledTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}!`);
+      } else {
+        setSavingStatus(`Error queuing: ${schedData.error}`);
+      }
+    } catch (err: any) {
+      alert(err.message);
+      setSavingStatus(`Error: ${err.message}`);
+    } finally {
+      setQuickQueuingIdeaId(null);
     }
   };
 
@@ -334,6 +392,24 @@ export function AIStudioView() {
         </div>
       </div>
 
+      {/* Queued Notice Banner */}
+      {queuedNotice && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/40 text-emerald-400 text-xs rounded-xl flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Post &quot;{queuedNotice}&quot; successfully built and added to the Publishing Queue!</span>
+          </div>
+          {onNavigateToQueue && (
+            <button
+              onClick={onNavigateToQueue}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition-colors shadow-xs"
+            >
+              Open Publishing Queue →
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Generated Ideas Suggestions */}
       {ideas.length > 0 && !generatedPost && (
         <div className="space-y-4">
@@ -363,14 +439,25 @@ export function AIStudioView() {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => handleGenerateFullPost(idea.premise, idea.id)}
-                  disabled={generatingPost}
-                  className="mt-4 w-full py-2 px-3 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-700 dark:text-red-300 font-semibold text-xs rounded-lg flex items-center justify-center space-x-1 transition-colors"
-                >
-                  <span>{generatingPost ? "Building..." : "Build Complete Post"}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#1E2333] flex flex-col gap-2">
+                  <button
+                    onClick={() => handleQuickBuildAndQueue(idea)}
+                    disabled={quickQueuingIdeaId === idea.title || generatingPost}
+                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg flex items-center justify-center space-x-1.5 transition-all shadow-xs"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{quickQueuingIdeaId === idea.title ? "Building & Queuing..." : "⚡ Build & Add to Queue"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleGenerateFullPost(idea.premise, idea.id)}
+                    disabled={generatingPost || quickQueuingIdeaId !== null}
+                    className="w-full py-1.5 px-3 bg-slate-100 dark:bg-[#1A1D2A] hover:bg-slate-200 dark:hover:bg-[#232738] text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg flex items-center justify-center space-x-1 transition-colors"
+                  >
+                    <span>{generatingPost ? "Building..." : "✏️ Customize & Review Post"}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -512,6 +599,15 @@ export function AIStudioView() {
                   >
                     <Clock className="w-3.5 h-3.5" />
                     <span>⚡ Add to Queue</span>
+                  </button>
+                )}
+
+                {generatedPost.status === "SCHEDULED" && onNavigateToQueue && (
+                  <button
+                    onClick={onNavigateToQueue}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center space-x-1.5 shadow-xs"
+                  >
+                    <span>View in Publishing Queue →</span>
                   </button>
                 )}
 
