@@ -40,6 +40,25 @@ export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
   const [rewritingComponent, setRewritingComponent] = useState<string | null>(null);
   const [savingStatus, setSavingStatus] = useState<string>("");
 
+  const formatErrorMessage = (err: any): string => {
+    if (!err) return "Action failed";
+    if (typeof err === "string") {
+      if (err.startsWith("[") || err.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(err);
+          if (Array.isArray(parsed)) {
+            return parsed.map((p: any) => p.message || p.code || JSON.stringify(p)).join(", ");
+          }
+          if (parsed.message) return parsed.message;
+          if (parsed.error) return typeof parsed.error === "string" ? parsed.error : JSON.stringify(parsed.error);
+        } catch {}
+      }
+      return err;
+    }
+    if (err.message) return err.message;
+    return JSON.stringify(err);
+  };
+
   // Step 1: Generate fresh ideas
   const handleGenerateIdeas = async () => {
     try {
@@ -54,10 +73,10 @@ export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
       if (data.ideas) {
         setIdeas(data.ideas);
       } else {
-        alert(data.error || "Failed to generate ideas");
+        alert(formatErrorMessage(data.error || "Failed to generate ideas"));
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(formatErrorMessage(err.message));
     } finally {
       setLoadingIdeas(false);
     }
@@ -85,10 +104,10 @@ export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
         setGeneratedPost(data.post);
         setModerationInfo(data.moderation);
       } else {
-        alert(data.error || "Failed to generate structured post");
+        alert(formatErrorMessage(data.error || "Failed to generate structured post"));
       }
     } catch (err: any) {
-      alert(err.message);
+      alert(formatErrorMessage(err.message));
     } finally {
       setGeneratingPost(false);
     }
@@ -137,8 +156,8 @@ export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
         setSavingStatus(`Error queuing: ${schedData.error}`);
       }
     } catch (err: any) {
-      alert(err.message);
-      setSavingStatus(`Error: ${err.message}`);
+      alert(formatErrorMessage(err.message));
+      setSavingStatus(`Error: ${formatErrorMessage(err.message)}`);
     } finally {
       setQuickQueuingIdeaId(null);
     }
@@ -181,7 +200,7 @@ export function AIStudioView({ onNavigateToQueue }: AIStudioViewProps = {}) {
         });
       }
     } catch (e: any) {
-      alert(e.message);
+      alert(formatErrorMessage(e.message));
     } finally {
       setRewritingComponent(null);
     }

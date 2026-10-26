@@ -62,6 +62,25 @@ export function PublishingQueueView() {
     fetchQueue();
   }, []);
 
+  const formatErrorMessage = (err: any): string => {
+    if (!err) return "Action failed";
+    if (typeof err === "string") {
+      if (err.startsWith("[") || err.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(err);
+          if (Array.isArray(parsed)) {
+            return parsed.map((p: any) => p.message || p.code || JSON.stringify(p)).join(", ");
+          }
+          if (parsed.message) return parsed.message;
+          if (parsed.error) return typeof parsed.error === "string" ? parsed.error : JSON.stringify(parsed.error);
+        } catch {}
+      }
+      return err;
+    }
+    if (err.message) return err.message;
+    return JSON.stringify(err);
+  };
+
   const handleAction = async (action: string, jobId?: string) => {
     try {
       setActionInProgress(jobId || action);
@@ -79,10 +98,10 @@ export function PublishingQueueView() {
         );
         await fetchQueue();
       } else {
-        alert(data.error || "Action failed");
+        alert(formatErrorMessage(data.error || "Action failed"));
       }
     } catch (e: any) {
-      alert(e.message);
+      alert(formatErrorMessage(e.message));
     } finally {
       setActionInProgress(null);
     }
@@ -106,10 +125,10 @@ export function PublishingQueueView() {
         setStatusMessage(`✔ Post added to publishing queue for ${scheduledTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}!`);
         await fetchQueue();
       } else {
-        alert(data.error || "Failed to schedule post");
+        alert(formatErrorMessage(data.error || "Failed to schedule post"));
       }
     } catch (e: any) {
-      alert(e.message);
+      alert(formatErrorMessage(e.message));
     } finally {
       setActionInProgress(null);
     }
@@ -142,10 +161,10 @@ export function PublishingQueueView() {
         setStatusMessage("🚀 Post successfully published live to Instagram!");
         await fetchQueue();
       } else {
-        alert(data.error || "Publish failed");
+        alert(formatErrorMessage(data.error || "Publish failed"));
       }
     } catch (e: any) {
-      alert(e.message);
+      alert(formatErrorMessage(e.message));
     } finally {
       setActionInProgress(null);
     }
@@ -166,10 +185,10 @@ export function PublishingQueueView() {
         setStatusMessage(`✔ AI successfully created & queued: "${data.post?.title}"`);
         await fetchQueue();
       } else {
-        alert(data.message || data.error || "Auto-generation failed");
+        alert(formatErrorMessage(data.error || data.message || "Auto-generation failed"));
       }
     } catch (e: any) {
-      alert(e.message);
+      alert(formatErrorMessage(e.message));
     } finally {
       setAutoGenerating(false);
     }
