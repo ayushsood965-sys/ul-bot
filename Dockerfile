@@ -5,12 +5,19 @@ WORKDIR /app
 # Install openssl for Prisma and build tools
 RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 
-# Copy package.json only to avoid Windows lockfile optional dependency pinning
-COPY package.json ./
+# Configure npm network timeouts and retry resilience
+RUN npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000
 
-# Install dependencies and explicitly install the linux x64 oxide binary for Tailwind v4
+# Copy dependency manifests
+COPY package*.json ./
+
+# Install project dependencies
 RUN npm install --include=dev --no-audit
-RUN npm install --save-optional @tailwindcss/oxide-linux-x64-gnu@4.3.3
+
+# Explicitly install Linux x64 native binary for Tailwind CSS v4 oxide engine
+RUN npm install --no-audit @tailwindcss/oxide-linux-x64-gnu@4.3.3
 
 COPY . .
 

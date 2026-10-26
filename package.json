@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
+    "@tailwindcss/turbopack": "^4",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.41.0",
     "clsx": "^2.1.1",
@@ -21,15 +22,14 @@
     "jose": "^5.9.6",
     "lucide-react": "^1.16.0",
     "next": "16.4.3",
+    "prisma": "^6.4.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.2",
-    "zod": "^3.24.2",
-    "@tailwindcss/turbopack": "^4",
-    "prisma": "^6.4.1",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
@@ -46,5 +46,8 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.3"
   }
 }
