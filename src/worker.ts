@@ -56,6 +56,8 @@ async function runWorkerLoop() {
           const autoRes = await PublishingSchedulerService.autoGenerateNextPost();
           if (autoRes.success) {
             console.log(`[Worker] Autonomous post generation: ${autoRes.message}`);
+          } else if (cycleCount === 1) {
+            console.log(`[Worker] Autonomous post schedule check: ${autoRes.message}`);
           }
         } catch (autoErr: any) {
           console.warn("[Worker] Autonomous generation cycle skipped:", autoErr.message);

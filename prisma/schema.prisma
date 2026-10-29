@@ -230,7 +230,7 @@ model ModerationReview {
 model PublishingSchedule {
   id         String   @id @default(uuid())
   slotLabel  String   // "Morning Slot", "Late Morning", "Afternoon", "Evening", "Late Evening"
-  slotTime   String   // "09:30", "12:30", "15:30", "18:30", "21:30"
+  slotTime   String   // "08:30", "12:30", "16:30", "20:30", "23:30"
   daysOfWeek String   @default("ALL")
   timezone   String   @default("Asia/Kolkata")
   isEnabled  Boolean  @default(true)

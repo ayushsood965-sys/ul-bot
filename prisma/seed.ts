@@ -220,7 +220,7 @@ async function main() {
     data: [
       {
         slotLabel: "Morning Prime",
-        slotTime: "09:30",
+        slotTime: "08:30",
         daysOfWeek: "ALL",
         timezone: "Asia/Kolkata",
         isEnabled: true,
@@ -234,21 +234,21 @@ async function main() {
       },
       {
         slotLabel: "Afternoon Slump",
-        slotTime: "15:30",
+        slotTime: "16:30",
         daysOfWeek: "ALL",
         timezone: "Asia/Kolkata",
         isEnabled: true,
       },
       {
         slotLabel: "Evening Peak Transit",
-        slotTime: "18:30",
+        slotTime: "20:30",
         daysOfWeek: "ALL",
         timezone: "Asia/Kolkata",
         isEnabled: true,
       },
       {
         slotLabel: "Late-Night Jury Session",
-        slotTime: "21:30",
+        slotTime: "23:30",
         daysOfWeek: "ALL",
         timezone: "Asia/Kolkata",
         isEnabled: true,

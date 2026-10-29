@@ -124,11 +124,11 @@ export function OverviewView({ onNavigate }: OverviewViewProps) {
   ];
 
   const upcomingSlots = [
-    { slot: "Morning Slot", time: "09:30 AM IST", status: "Published", caseName: "Case #49: Situationship Cowardice" },
+    { slot: "Morning Slot", time: "08:30 AM IST", status: "Published", caseName: "Case #49: Situationship Cowardice" },
     { slot: "Mid-Day Slot", time: "12:30 PM IST", status: "Scheduled", caseName: "Case #104: The 50/50 Salary Trap" },
-    { slot: "Afternoon Slot", time: "03:30 PM IST", status: "Open Slot", caseName: "Queue candidate available" },
-    { slot: "Evening Slot", time: "06:30 PM IST", status: "Scheduled", caseName: "Aura Tax: Group Chat Ragequit" },
-    { slot: "Late-Night Jury", time: "09:30 PM IST", status: "Pending", caseName: "Case #105: UPSC vs Startup Equity" },
+    { slot: "Afternoon Slot", time: "04:30 PM IST", status: "Open Slot", caseName: "Queue candidate available" },
+    { slot: "Evening Slot", time: "08:30 PM IST", status: "Scheduled", caseName: "Aura Tax: Group Chat Ragequit" },
+    { slot: "Late-Night Jury", time: "11:30 PM IST", status: "Pending", caseName: "Case #105: UPSC vs Startup Equity" },
   ];
 
   return (

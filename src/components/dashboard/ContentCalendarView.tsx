@@ -20,11 +20,11 @@ export function ContentCalendarView() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const slots = [
-    { label: "Morning Prime", time: "09:30 AM", defaultPillar: "MONEY_MODERN_LIFE" },
+    { label: "Morning Prime", time: "08:30 AM", defaultPillar: "MONEY_MODERN_LIFE" },
     { label: "Mid-Day Discussion", time: "12:30 PM", defaultPillar: "RELATIONSHIPS" },
-    { label: "Afternoon Slump", time: "03:30 PM", defaultPillar: "SOCIAL_BEHAVIOUR" },
-    { label: "Evening Transit Peak", time: "06:30 PM", defaultPillar: "RELATIONSHIPS" },
-    { label: "Late-Night Jury Room", time: "09:30 PM", defaultPillar: "SOCIAL_BEHAVIOUR" },
+    { label: "Afternoon Slump", time: "04:30 PM", defaultPillar: "SOCIAL_BEHAVIOUR" },
+    { label: "Evening Transit Peak", time: "08:30 PM", defaultPillar: "RELATIONSHIPS" },
+    { label: "Late-Night Jury Room", time: "11:30 PM", defaultPillar: "SOCIAL_BEHAVIOUR" },
   ];
 
   const fetchCalendar = async () => {

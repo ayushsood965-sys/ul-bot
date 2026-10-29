@@ -5,13 +5,19 @@ export async function POST(req: Request) {
   try {
     const { postId, scheduledFor } = await req.json();
 
-    if (!postId || !scheduledFor) {
-      return NextResponse.json({ error: "postId and scheduledFor timestamp are required" }, { status: 400 });
+    if (!postId) {
+      return NextResponse.json({ error: "postId is required" }, { status: 400 });
     }
 
-    const date = new Date(scheduledFor);
-    if (isNaN(date.getTime())) {
-      return NextResponse.json({ error: "Invalid scheduledFor date format" }, { status: 400 });
+    let date: Date;
+    if (scheduledFor) {
+      date = new Date(scheduledFor);
+      if (isNaN(date.getTime())) {
+        return NextResponse.json({ error: "Invalid scheduledFor date format" }, { status: 400 });
+      }
+    } else {
+      // Automatically calculate next available 4-5 hour interval slot
+      date = await PublishingSchedulerService.getNextPublishSlot();
     }
 
     const job = await PublishingSchedulerService.schedulePost(postId, date);

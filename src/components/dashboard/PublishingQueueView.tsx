@@ -107,22 +107,21 @@ export function PublishingQueueView() {
     }
   };
 
-  // Quick Queue a pending post for publication
-  const handleQueuePost = async (postId: string, minutesFromNow: number = 5) => {
+  // Quick Queue a pending post for publication in the next available 4-5 hour slot
+  const handleQueuePost = async (postId: string) => {
     try {
       setActionInProgress(postId);
-      const scheduledTime = new Date(Date.now() + minutesFromNow * 60 * 1000);
       const res = await fetch("/api/publishing/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postId,
-          scheduledFor: scheduledTime.toISOString(),
-        }),
+        body: JSON.stringify({ postId }),
       });
       const data = await res.json();
       if (data.success) {
-        setStatusMessage(`✔ Post added to publishing queue for ${scheduledTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}!`);
+        const slotTime = data.job?.scheduledFor
+          ? new Date(data.job.scheduledFor).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "next publishing slot";
+        setStatusMessage(`✔ Post added to publishing queue for ${slotTime}!`);
         await fetchQueue();
       } else {
         alert(formatErrorMessage(data.error || "Failed to schedule post"));
@@ -300,7 +299,7 @@ export function PublishingQueueView() {
 
                 <div className="pt-2 border-t border-slate-100 dark:border-[#23283B] flex items-center justify-end gap-2">
                   <button
-                    onClick={() => handleQueuePost(post.id, 5)}
+                    onClick={() => handleQueuePost(post.id)}
                     disabled={actionInProgress === post.id}
                     className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded flex items-center space-x-1"
                   >
