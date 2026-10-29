@@ -307,7 +307,7 @@ export class AIService {
     messages.push({ role: "user", content: prompt });
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 50000);
 
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
