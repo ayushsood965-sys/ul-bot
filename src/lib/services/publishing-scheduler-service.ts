@@ -435,6 +435,8 @@ export class PublishingSchedulerService {
       ideaPremise: topIdea.premise,
       pillar,
       format,
+      isCarousel: true,
+      templateCode: "MULTI_SLIDE_CAROUSEL",
     });
 
     const modCheck = runContentModeration(

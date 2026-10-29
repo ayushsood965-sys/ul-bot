@@ -516,6 +516,7 @@ Output a raw JSON array of objects adhering to this schema (do NOT wrap in an ou
     templateCode?: string;
     isCarousel?: boolean;
   }) {
+    const isCarousel = params.isCarousel !== undefined ? params.isCarousel : true;
     const brand = await db.brandConfiguration.findFirst({ where: { isActive: true } });
     const systemPrompt = `You are the chief editorial writer for "Unfiltered Lore" (@_unfiltered_lore_).
 Tagline: "${brand?.tagline || "Raw Everyday Lore & Unfiltered Verdicts."}"
@@ -538,7 +539,7 @@ Formatting requirements:
 Premise: "${params.ideaPremise}"
 Pillar: ${params.pillar}
 Format: ${params.format}
-IsCarousel: ${params.isCarousel ? "true" : "false"}
+IsCarousel: ${isCarousel ? "true" : "false"}
 
 Output valid JSON matching this structure:
 {
@@ -552,7 +553,7 @@ Output valid JSON matching this structure:
   "caption": "Full Instagram caption starting with hook, dilemma context, discussion prompt, and call to action",
   "hashtags": ["TheVerdictRoom", "ModernDating", "IndianGenZ", "AuraTax", "Dilemma"],
   "callToAction": "The internet is the jury. Drop your verdict below.",
-  "suggestedTemplate": "${params.templateCode || (params.isCarousel ? "MULTI_SLIDE_CAROUSEL" : "THE_COURTROOM")}",
+  "suggestedTemplate": "${params.templateCode || (isCarousel ? "MULTI_SLIDE_CAROUSEL" : "THE_COURTROOM")}",
   ${
     params.format === "THE_CASE"
       ? `"options": [
@@ -565,7 +566,7 @@ Output valid JSON matching this structure:
   }
   ${params.format === "AURA_TAX" ? `"auraPoints": -1200,` : ""}
   ${
-    params.isCarousel
+    isCarousel
       ? `"isCarousel": true,
   "slides": [
     {
