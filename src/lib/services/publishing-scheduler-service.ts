@@ -444,6 +444,8 @@ export class PublishingSchedulerService {
 
     const contentId = `TVR-${new Date().getFullYear()}-${format.slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`;
 
+    const isCarousel = !!(generated.slides && generated.slides.length > 1);
+
     const newPost = await db.contentPost.create({
       data: {
         contentId,
@@ -457,18 +459,45 @@ export class PublishingSchedulerService {
         caption: generated.caption,
         hashtags: JSON.stringify(generated.hashtags || []),
         callToAction: generated.callToAction,
-        suggestedTemplate: generated.suggestedTemplate || "THE_COURTROOM",
+        suggestedTemplate: generated.suggestedTemplate || (isCarousel ? "MULTI_SLIDE_CAROUSEL" : "THE_COURTROOM"),
         optionsJson: generated.options ? JSON.stringify(generated.options) : null,
         auraPoints: generated.auraPoints ? Number(generated.auraPoints) : null,
         status: "APPROVED",
         moderationStatus: modCheck.passed ? "PASSED" : "FLAGGED",
         qualityScore: 8.8,
-        isCarousel: false,
-        slideCount: 1,
+        isCarousel,
+        slideCount: generated.slides?.length || 1,
         contentFingerprint: `fp_${contentId}_${Date.now()}`,
         renderedAssetUrl: `/api/creative/render/${contentId}`,
       },
     });
+
+    // Persist Engine 5 carousel slides if present
+    if (isCarousel && generated.slides && Array.isArray(generated.slides)) {
+      for (const s of generated.slides) {
+        const bodyToStore =
+          s.chatMessages && s.chatMessages.length > 0
+            ? JSON.stringify({
+                contactName: s.chatContactName || "Chat Evidence",
+                messages: s.chatMessages,
+                originalBody: s.bodyText,
+              })
+            : s.bodyText;
+
+        await db.contentSlide.create({
+          data: {
+            postId: newPost.id,
+            slideIndex: s.slideIndex,
+            slideType: s.slideType,
+            headline: s.headline,
+            subtext: s.subtext,
+            badgeText: s.badgeText || `SLIDE ${s.slideIndex}`,
+            bodyText: bodyToStore,
+            renderedImageUrl: `/api/creative/render/${contentId}?slide=${s.slideIndex}`,
+          },
+        });
+      }
+    }
 
     // Schedule for the next available publishing slot spaced across the day (4-5 hours interval)
     const scheduledTime = await this.getNextPublishSlot();

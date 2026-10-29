@@ -18,6 +18,9 @@ export interface RenderCardOptions {
   stampText?: string;
   brandName?: string;
   handle?: string;
+  chatContactName?: string;
+  chatMessages?: Array<{ sender: "ME" | "THEM"; text: string; time?: string }>;
+  swipeCtaText?: string;
 }
 
 // 1080 x 1350 px standard Instagram 4:5 Feed Canvas
@@ -448,21 +451,60 @@ export class CreativeRendererService {
     </svg>`;
   }
 
-  // Render Template 5: MULTI-SLIDE CAROUSEL (Individual Slide Generator)
-  public static renderCarouselSlideSVG(opts: RenderCardOptions): string {
+  // Helper: Top progress dots
+  private static renderDots(slideIdx: number, total: number = 5): string {
+    return `
+      <g transform="translate(80, 50)">
+        ${Array.from({ length: total })
+          .map((_, i) => {
+            const x = i * 35;
+            const isCurrent = i + 1 === slideIdx;
+            return `<circle cx="${x}" cy="10" r="${isCurrent ? 7 : 4}" fill="${isCurrent ? "#DC2626" : "#2E344A"}"/>`;
+          })
+          .join("\n")}
+        <text x="920" y="16" fill="#94A3B8" font-size="16" text-anchor="end" class="mono" font-weight="700">${slideIdx} / ${total}</text>
+      </g>
+    `;
+  }
+
+  // Helper: Top badge and branding
+  private static renderHeaderBadge(badgeText: string, brandName: string = "UNFILTERED LORE"): string {
+    const badgeWidth = Math.min(420, Math.max(220, badgeText.length * 13 + 30));
+    return `
+      <g transform="translate(80, 100)">
+        <rect x="0" y="0" width="${badgeWidth}" height="40" rx="4" fill="#1C1F2E" stroke="#2D334A" stroke-width="1"/>
+        <text x="${badgeWidth / 2}" y="25" fill="#F87171" font-size="15" text-anchor="middle" class="mono" font-weight="700">${escapeXml(badgeText)}</text>
+        <text x="920" y="26" fill="#E2E8F0" font-size="16" text-anchor="end" class="serif">${escapeXml(brandName)}</text>
+      </g>
+    `;
+  }
+
+  // Helper: Standardized branded footer
+  private static renderFooter(handle: string = "@_unfiltered_lore_"): string {
+    return `
+      <g transform="translate(80, 1260)">
+        <line x1="0" y1="0" x2="920" y2="0" stroke="#1E2336" stroke-width="1"/>
+        <text x="0" y="38" fill="#94A3B8" font-size="16" class="sans" font-weight="600">THE INTERNET IS THE JURY.</text>
+        <text x="920" y="38" fill="#F87171" font-size="16" text-anchor="end" class="mono" font-weight="700">${escapeXml(handle)}</text>
+      </g>
+    `;
+  }
+
+  // Engine 5 Slide 1: High-Retention Cover Hook
+  public static renderCarouselCoverSlide(opts: RenderCardOptions): string {
     const brandName = opts.brandName || "UNFILTERED LORE";
     const handle = opts.handle || "@_unfiltered_lore_";
-    const slideIdx = opts.slideIndex || 1;
-    const slideTotal = opts.slideTotal || 5;
-    const badge = opts.slideType || `SLIDE ${slideIdx}/${slideTotal}`;
-    const headlineLines = wrapText(opts.headline, 28);
-    const narrativeLines = wrapText(opts.narrative || "", 40);
+    const caseNum = opts.caseNumber || "CASE #104";
+    const pillarTag = opts.pillar?.replace(/_/g, " ") || "RELATIONSHIPS";
+    const headlineLines = wrapText(opts.headline, 24);
+    const narrativeLines = wrapText(opts.narrative || "", 38);
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
       <defs>
-        <linearGradient id="caroBg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#0C0D12"/>
-          <stop offset="100%" stop-color="#07080B"/>
+        <linearGradient id="bgGradCover" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B0C10"/>
+          <stop offset="60%" stop-color="#10121A"/>
+          <stop offset="100%" stop-color="#08090C"/>
         </linearGradient>
       </defs>
       <style>
@@ -470,67 +512,393 @@ export class CreativeRendererService {
         .sans { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif; }
         .mono { font-family: 'SF Mono', 'Courier New', monospace; letter-spacing: 2px; }
       </style>
+      <rect width="1080" height="1350" fill="url(#bgGradCover)"/>
+      ${this.renderDots(1, opts.slideTotal || 5)}
+      ${this.renderHeaderBadge(`${caseNum} • ${pillarTag}`, brandName)}
 
-      <rect width="1080" height="1350" fill="url(#caroBg)"/>
-
-      <!-- Progress Dots at Top -->
-      <g transform="translate(80, 60)">
-        ${Array.from({ length: slideTotal })
-          .map((_, i) => {
-            const x = i * 40;
-            const isCurrent = i + 1 === slideIdx;
-            return `<circle cx="${x}" cy="10" r="${isCurrent ? 7 : 4}" fill="${isCurrent ? "#DC2626" : "#2E344A"}"/>`;
-          })
-          .join("\n")}
-        <text x="920" y="16" fill="#94A3B8" font-size="16" text-anchor="end" class="mono" font-weight="700">${slideIdx} / ${slideTotal}</text>
-      </g>
-
-      <!-- Badge / Case Pill -->
-      <g transform="translate(80, 130)">
-        <rect x="0" y="0" width="220" height="42" rx="4" fill="#1C1F2E" stroke="#2D334A" stroke-width="1"/>
-        <text x="110" y="26" fill="#F87171" font-size="16" text-anchor="middle" class="mono" font-weight="700">${escapeXml(badge)}</text>
-        <text x="920" y="26" fill="#E2E8F0" font-size="16" text-anchor="end" class="serif">${escapeXml(brandName)}</text>
-      </g>
-
-      <!-- Main Headline -->
-      <g transform="translate(80, 260)">
+      <!-- Main Dilemma Headline -->
+      <g transform="translate(80, 220)">
         ${headlineLines
-          .map(
-            (line, idx) =>
-              `<text x="0" y="${idx * 64}" fill="#FFFFFF" font-size="48" class="serif">${escapeXml(line)}</text>`
-          )
+          .map((l, i) => `<text x="0" y="${i * 70}" fill="#FFFFFF" font-size="52" class="serif">${escapeXml(l)}</text>`)
           .join("\n")}
       </g>
 
-      <line x1="80" y1="480" x2="280" y2="480" stroke="#DC2626" stroke-width="3"/>
+      <!-- Crimson Divider Accent -->
+      <line x1="80" y1="520" x2="280" y2="520" stroke="#DC2626" stroke-width="4"/>
+      <line x1="290" y1="520" x2="1000" y2="520" stroke="#22283A" stroke-width="1"/>
 
-      <!-- Body / Evidence Content Box -->
-      <g transform="translate(80, 530)">
-        <rect x="0" y="0" width="920" height="440" rx="12" fill="#131622" stroke="#242B3E" stroke-width="1.5"/>
-        <g transform="translate(48, 70)">
+      <!-- Narrative Teaser -->
+      <g transform="translate(80, 560)">
+        <rect x="0" y="0" width="920" height="260" rx="10" fill="#131622" stroke="#23283B" stroke-width="1.2"/>
+        <rect x="0" y="0" width="8" height="260" rx="2" fill="#DC2626"/>
+        <g transform="translate(44, 56)">
           ${narrativeLines
-            .map(
-              (line, idx) =>
-                `<text x="0" y="${idx * 40}" fill="#E2E8F0" font-size="25" class="sans" font-weight="400">${escapeXml(line)}</text>`
-            )
+            .slice(0, 5)
+            .map((l, i) => `<text x="0" y="${i * 38}" fill="#CBD5E1" font-size="24" class="sans">${escapeXml(l)}</text>`)
             .join("\n")}
         </g>
       </g>
 
-      <!-- Swipe Prompt Indicator -->
-      <g transform="translate(80, 1060)">
-        <text x="460" y="40" fill="#94A3B8" font-size="20" class="mono" font-weight="600" text-anchor="middle">
-          ${slideIdx < slideTotal ? "SWIPE FOR EVIDENCE ➔" : "DROP YOUR VERDICT IN COMMENTS ⚖️"}
+      <!-- High-Conversion Retention Hook / Swipe Pill -->
+      <g transform="translate(80, 890)">
+        <rect x="0" y="0" width="920" height="130" rx="12" fill="#1C1014" stroke="#DC2626" stroke-width="2"/>
+        <text x="460" y="52" fill="#FCA5A5" font-size="24" font-weight="900" class="mono" text-anchor="middle">🚨 EXHIBIT A: RAW CHATS ON NEXT SLIDE</text>
+        <text x="460" y="92" fill="#FFFFFF" font-size="20" class="sans" text-anchor="middle" font-weight="600">Swipe to inspect the 2:14 AM text message ➔</text>
+      </g>
+
+      ${this.renderFooter(handle)}
+    </svg>`;
+  }
+
+  // Engine 5 Slide 2: WhatsApp Chat Evidence (2nd-Impression Retention Maximizer)
+  public static renderWhatsAppChatSlide(opts: RenderCardOptions): string {
+    const brandName = opts.brandName || "UNFILTERED LORE";
+    const handle = opts.handle || "@_unfiltered_lore_";
+    const slideIdx = opts.slideIndex || 2;
+    const slideTotal = opts.slideTotal || 5;
+    const contactName = opts.chatContactName || "Rohan (Bumble 🚩)";
+
+    const messages = (opts.chatMessages && opts.chatMessages.length > 0)
+      ? opts.chatMessages
+      : [
+          { sender: "THEM" as const, text: "Can you send ₹70 for the soup? Sent you the split bill screenshot.", time: "02:14 AM" },
+          { sender: "ME" as const, text: "You make ₹28 LPA and we've been dating 8 months... are we really splitting ₹70 at 2 AM? 💀", time: "02:15 AM" },
+          { sender: "THEM" as const, text: "It's not about the money, it's about the principle. 50/50 means 50/50 always.", time: "02:16 AM" },
+          { sender: "ME" as const, text: "Cool. Sending ₹70 right now.", time: "02:17 AM" },
+        ];
+
+    let bubblesSvg = "";
+    let currentY = 320;
+
+    for (const msg of messages.slice(0, 5)) {
+      const isMe = msg.sender === "ME";
+      const lines = wrapText(msg.text, isMe ? 28 : 30);
+      const lineCount = lines.length;
+      const bubbleHeight = 24 + lineCount * 30 + 26;
+      const maxLineLen = Math.max(...lines.map((l) => l.length));
+      const bubbleWidth = Math.min(680, Math.max(300, maxLineLen * 14 + 50));
+      const bubbleX = isMe ? 980 - bubbleWidth : 100;
+      const bubbleBg = isMe ? "#005C4B" : "#202C33";
+      const msgTime = msg.time || "02:14 AM";
+
+      bubblesSvg += `
+        <g transform="translate(${bubbleX}, ${currentY})">
+          <rect x="0" y="0" width="${bubbleWidth}" height="${bubbleHeight}" rx="14" fill="${bubbleBg}"/>
+          <g transform="translate(20, 30)">
+            ${lines
+              .map((l, idx) => `<text x="0" y="${idx * 30}" fill="#E9EDEF" font-size="22" class="sans">${escapeXml(l)}</text>`)
+              .join("\n")}
+          </g>
+          <g transform="translate(${bubbleWidth - (isMe ? 95 : 75)}, ${bubbleHeight - 10})">
+            <text x="0" y="0" fill="#8696A0" font-size="13" class="sans">${msgTime}</text>
+            ${isMe ? `<text x="56" y="0" fill="#53BDEB" font-size="14" font-weight="bold">✓✓</text>` : ""}
+          </g>
+        </g>
+      `;
+      currentY += bubbleHeight + 20;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+      <defs>
+        <linearGradient id="bgGradWhatsApp" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B141A"/>
+          <stop offset="50%" stop-color="#0E181E"/>
+          <stop offset="100%" stop-color="#080D11"/>
+        </linearGradient>
+      </defs>
+      <style>
+        .serif { font-family: 'Georgia', 'Playfair Display', serif; font-weight: 700; }
+        .sans { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif; }
+        .mono { font-family: 'SF Mono', 'Courier New', monospace; letter-spacing: 2px; }
+      </style>
+      <rect width="1080" height="1350" fill="url(#bgGradWhatsApp)"/>
+      ${this.renderDots(slideIdx, slideTotal)}
+      ${this.renderHeaderBadge("EXHIBIT A • RAW EVIDENCE", brandName)}
+
+      <!-- WhatsApp Interface Header Bar -->
+      <g transform="translate(80, 170)">
+        <rect x="0" y="0" width="920" height="80" rx="14" fill="#1F2C34" stroke="#2A3942" stroke-width="1.5"/>
+        <text x="24" y="48" fill="#8696A0" font-size="28" font-weight="bold">←</text>
+        <circle cx="78" cy="40" r="24" fill="#00A884"/>
+        <text x="78" y="47" fill="#FFFFFF" font-size="18" font-weight="bold" text-anchor="middle">
+          ${escapeXml((contactName[0] || "U").toUpperCase())}
+        </text>
+        <text x="116" y="36" fill="#E9EDEF" font-size="22" font-weight="bold" class="sans">${escapeXml(contactName)}</text>
+        <text x="116" y="58" fill="#8696A0" font-size="14" class="sans">online • 02:14 AM</text>
+        <text x="860" y="48" fill="#8696A0" font-size="24">⋮</text>
+      </g>
+
+      <!-- Encryption Notice -->
+      <g transform="translate(80, 275)">
+        <rect x="220" y="0" width="480" height="28" rx="6" fill="#182229"/>
+        <text x="460" y="19" fill="#8696A0" font-size="12" text-anchor="middle" class="sans">🔒 Messages and calls are end-to-end encrypted</text>
+      </g>
+
+      ${bubblesSvg}
+
+      <!-- Retention Swipe Banner -->
+      <g transform="translate(80, 1140)">
+        <rect x="0" y="0" width="920" height="64" rx="8" fill="#161824" stroke="#DC2626" stroke-width="1.5"/>
+        <text x="460" y="40" fill="#FFFFFF" font-size="18" class="mono" font-weight="700" text-anchor="middle">
+          SWIPE FOR EXHIBIT B • THE DILEMMA BREAKDOWN ➔
         </text>
       </g>
 
-      <!-- Footer -->
-      <g transform="translate(80, 1240)">
-        <line x1="0" y1="0" x2="920" y2="0" stroke="#1E2336" stroke-width="1"/>
-        <text x="0" y="38" fill="#94A3B8" font-size="18" class="sans" font-weight="600">THE INTERNET IS THE JURY.</text>
-        <text x="920" y="38" fill="#F87171" font-size="18" text-anchor="end" class="mono" font-weight="700">${escapeXml(handle)}</text>
-      </g>
+      ${this.renderFooter(handle)}
     </svg>`;
+  }
+
+  // Engine 5 Slide 3: The Dilemma Breakdown (Split Perspectives)
+  public static renderCarouselContextSlide(opts: RenderCardOptions): string {
+    const brandName = opts.brandName || "UNFILTERED LORE";
+    const handle = opts.handle || "@_unfiltered_lore_";
+    const slideIdx = opts.slideIndex || 3;
+    const slideTotal = opts.slideTotal || 5;
+
+    const sideA = opts.sideA || {
+      title: "Position A: Strict 50/50",
+      argument: "Equal contribution preserves personal independence, financial boundaries, and stops hidden relationship resentment before it starts.",
+    };
+    const sideB = opts.sideB || {
+      title: "Position B: Income Equity",
+      argument: "When one partner makes ₹28 LPA and the other ₹7 LPA, splitting a ₹70 soup at 2 AM is toxic transactional penny-pinching masquerading as equality.",
+    };
+
+    const sideALines = wrapText(sideA.argument, 22);
+    const sideBLines = wrapText(sideB.argument, 22);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+      <defs>
+        <linearGradient id="bgGradContext" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B0C10"/>
+          <stop offset="100%" stop-color="#060709"/>
+        </linearGradient>
+      </defs>
+      <style>
+        .serif { font-family: 'Georgia', 'Playfair Display', serif; font-weight: 700; }
+        .sans { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif; }
+        .mono { font-family: 'SF Mono', 'Courier New', monospace; letter-spacing: 2px; }
+      </style>
+      <rect width="1080" height="1350" fill="url(#bgGradContext)"/>
+      ${this.renderDots(slideIdx, slideTotal)}
+      ${this.renderHeaderBadge("EXHIBIT B • THE TWO SIDES", brandName)}
+
+      <g transform="translate(80, 200)">
+        <text x="0" y="0" fill="#FFFFFF" font-size="44" class="serif">The Underlying Moral Conflict</text>
+      </g>
+
+      <!-- Side-by-Side Cards -->
+      <g transform="translate(80, 310)">
+        <!-- Side A -->
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="440" height="680" rx="10" fill="#131726" stroke="#2A3350" stroke-width="1.5"/>
+          <rect x="0" y="0" width="440" height="60" rx="10" fill="#1C2338"/>
+          <text x="220" y="38" fill="#38BDF8" font-size="18" font-weight="700" text-anchor="middle" class="mono">${escapeXml(sideA.title)}</text>
+          <g transform="translate(28, 100)">
+            ${sideALines
+              .map((l, i) => `<text x="0" y="${i * 34}" fill="#E2E8F0" font-size="22" class="sans">${escapeXml(l)}</text>`)
+              .join("\n")}
+          </g>
+        </g>
+
+        <!-- Side B -->
+        <g transform="translate(480, 0)">
+          <rect x="0" y="0" width="440" height="680" rx="10" fill="#1C141E" stroke="#4A263C" stroke-width="1.5"/>
+          <rect x="0" y="0" width="440" height="60" rx="10" fill="#2D1A2A"/>
+          <text x="220" y="38" fill="#F43F5E" font-size="18" font-weight="700" text-anchor="middle" class="mono">${escapeXml(sideB.title)}</text>
+          <g transform="translate(28, 100)">
+            ${sideBLines
+              .map((l, i) => `<text x="0" y="${i * 34}" fill="#E2E8F0" font-size="22" class="sans">${escapeXml(l)}</text>`)
+              .join("\n")}
+          </g>
+        </g>
+      </g>
+
+      <!-- VS Divider Badge -->
+      <g transform="translate(540, 650)">
+        <circle cx="0" cy="0" r="32" fill="#0B0C10" stroke="#DC2626" stroke-width="3"/>
+        <text x="0" y="8" fill="#FFFFFF" font-size="18" font-weight="900" text-anchor="middle" class="mono">VS</text>
+      </g>
+
+      <!-- Swipe Prompt Banner -->
+      <g transform="translate(80, 1140)">
+        <rect x="0" y="0" width="920" height="64" rx="8" fill="#161824" stroke="#DC2626" stroke-width="1.5"/>
+        <text x="460" y="40" fill="#FFFFFF" font-size="18" class="mono" font-weight="700" text-anchor="middle">
+          SWIPE FOR THE AURA AUDIT ➔
+        </text>
+      </g>
+
+      ${this.renderFooter(handle)}
+    </svg>`;
+  }
+
+  // Engine 5 Slide 4: Aura Audit / Psychological Tax Assessment
+  public static renderCarouselAuraSlide(opts: RenderCardOptions): string {
+    const brandName = opts.brandName || "UNFILTERED LORE";
+    const handle = opts.handle || "@_unfiltered_lore_";
+    const slideIdx = opts.slideIndex || 4;
+    const slideTotal = opts.slideTotal || 5;
+
+    const points = opts.auraPoints ?? -1500;
+    const isGain = points > 0;
+    const auraBadgeText = isGain ? `+${points.toLocaleString()} AURA` : `${points.toLocaleString()} AURA`;
+    const badgeBg = isGain ? "#064E3B" : "#450A0A";
+    const badgeStroke = isGain ? "#10B981" : "#EF4444";
+    const badgeFg = isGain ? "#6EE7B7" : "#FCA5A5";
+
+    const narrative = opts.narrative ||
+      "Splitting bills mathematically is fine on paper. But demanding ₹70 over UPI at 2 AM from your partner signals extreme transactional anxiety, zero romantic warmth, and an inability to be generous.";
+    const narrativeLines = wrapText(narrative, 38);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+      <defs>
+        <linearGradient id="bgGradAura" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#090A0D"/>
+          <stop offset="100%" stop-color="#060709"/>
+        </linearGradient>
+      </defs>
+      <style>
+        .serif { font-family: 'Georgia', 'Playfair Display', serif; font-weight: 700; }
+        .sans { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif; }
+        .mono { font-family: 'SF Mono', 'Courier New', monospace; letter-spacing: 2px; }
+      </style>
+      <rect width="1080" height="1350" fill="url(#bgGradAura)"/>
+      ${this.renderDots(slideIdx, slideTotal)}
+      ${this.renderHeaderBadge("EXHIBIT C • AURA AUDIT", brandName)}
+
+      <!-- Giant Aura Badge -->
+      <g transform="translate(80, 200)">
+        <rect x="0" y="0" width="920" height="210" rx="12" fill="${badgeBg}" stroke="${badgeStroke}" stroke-width="2.5"/>
+        <text x="460" y="115" fill="${badgeFg}" font-size="76" font-weight="900" text-anchor="middle" class="mono" letter-spacing="4">${escapeXml(auraBadgeText)}</text>
+        <text x="460" y="165" fill="#E2E8F0" font-size="20" font-weight="600" text-anchor="middle" class="sans">BEHAVIOURAL PENALTY LEVIED BY THE INTERNET JURY</text>
+      </g>
+
+      <!-- Psychological Assessment Box -->
+      <g transform="translate(80, 480)">
+        <text x="0" y="0" fill="#94A3B8" font-size="17" class="mono" font-weight="700">PSYCHOLOGICAL ASSESSMENT:</text>
+        <g transform="translate(0, 30)">
+          <rect x="0" y="0" width="920" height="420" rx="10" fill="#121520" stroke="#212638" stroke-width="1.5"/>
+          <rect x="0" y="0" width="8" height="420" rx="2" fill="#EF4444"/>
+          <g transform="translate(40, 60)">
+            ${narrativeLines
+              .slice(0, 7)
+              .map((l, i) => `<text x="0" y="${i * 38}" fill="#CBD5E1" font-size="24" class="sans">${escapeXml(l)}</text>`)
+              .join("\n")}
+          </g>
+        </g>
+      </g>
+
+      <!-- Retention Swipe Banner -->
+      <g transform="translate(80, 1140)">
+        <rect x="0" y="0" width="920" height="64" rx="8" fill="#161824" stroke="#DC2626" stroke-width="1.5"/>
+        <text x="460" y="40" fill="#FFFFFF" font-size="18" class="mono" font-weight="700" text-anchor="middle">
+          SWIPE TO CAST YOUR VERDICT ➔
+        </text>
+      </g>
+
+      ${this.renderFooter(handle)}
+    </svg>`;
+  }
+
+  // Engine 5 Slide 5: The Internet Is The Jury Final Verdict
+  public static renderCarouselVerdictSlide(opts: RenderCardOptions): string {
+    const brandName = opts.brandName || "UNFILTERED LORE";
+    const handle = opts.handle || "@_unfiltered_lore_";
+    const slideIdx = opts.slideIndex || 5;
+    const slideTotal = opts.slideTotal || 5;
+
+    const options = opts.options || [
+      { key: "A", label: "Fair — Equal contribution protects personal dignity" },
+      { key: "B", label: "Petty — Counting ₹70 at 2 AM kills relationship intimacy" },
+      { key: "C", label: "Red Flag — Insensitive to salary disparity and context" },
+      { key: "D", label: "Both are toxic — Neither communicates like an adult" },
+    ];
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+      <defs>
+        <linearGradient id="bgGradVerdict" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0B0C10"/>
+          <stop offset="60%" stop-color="#12141F"/>
+          <stop offset="100%" stop-color="#08090C"/>
+        </linearGradient>
+      </defs>
+      <style>
+        .serif { font-family: 'Georgia', 'Playfair Display', serif; font-weight: 700; }
+        .sans { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif; }
+        .mono { font-family: 'SF Mono', 'Courier New', monospace; letter-spacing: 2px; }
+      </style>
+      <rect width="1080" height="1350" fill="url(#bgGradVerdict)"/>
+      ${this.renderDots(slideIdx, slideTotal)}
+      ${this.renderHeaderBadge("FINAL SLIDE • THE VERDICT", brandName)}
+
+      <!-- Title -->
+      <g transform="translate(80, 180)">
+        <text x="0" y="0" fill="#FFFFFF" font-size="46" class="serif">The Internet Is The Jury.</text>
+        <text x="0" y="40" fill="#94A3B8" font-size="20" class="sans">Cast your vote by choosing an option below:</text>
+      </g>
+
+      <!-- 4 Verdict Options -->
+      <g transform="translate(80, 290)">
+        ${options
+          .slice(0, 4)
+          .map((opt, i) => {
+            const y = i * 115;
+            const optLines = wrapText(opt.label, 36);
+            return `
+            <g transform="translate(0, ${y})">
+              <rect x="0" y="0" width="920" height="96" rx="10" fill="#141724" stroke="#272D40" stroke-width="1.2"/>
+              <rect x="18" y="18" width="60" height="60" rx="8" fill="#1F2436" stroke="#DC2626" stroke-width="1.5"/>
+              <text x="48" y="56" fill="#FFFFFF" font-size="26" font-weight="700" text-anchor="middle" class="serif">${opt.key}</text>
+              <g transform="translate(96, 38)">
+                ${optLines
+                  .map((l, idx) => `<text x="0" y="${idx * 28}" fill="#E2E8F0" font-size="21" class="sans" font-weight="500">${escapeXml(l)}</text>`)
+                  .join("\n")}
+              </g>
+            </g>`;
+          })
+          .join("\n")}
+      </g>
+
+      <!-- Ruthless Comment Call To Action -->
+      <g transform="translate(80, 890)">
+        <rect x="0" y="0" width="920" height="150" rx="12" fill="#1C1014" stroke="#DC2626" stroke-width="2"/>
+        <text x="460" y="55" fill="#FFFFFF" font-size="24" font-weight="900" class="mono" text-anchor="middle">💬 COMMENT 'A', 'B', 'C' OR 'D' WITH YOUR VERDICT</text>
+        <text x="460" y="95" fill="#FCA5A5" font-size="18" class="sans" text-anchor="middle" font-weight="600">The most ruthless, well-argued comment gets pinned at the top.</text>
+        <text x="460" y="125" fill="#94A3B8" font-size="15" class="sans" text-anchor="middle">@_unfiltered_lore_</text>
+      </g>
+
+      ${this.renderFooter(handle)}
+    </svg>`;
+  }
+
+  // Master individual slide generator dispatcher
+  public static renderCarouselSlideSVG(opts: RenderCardOptions): string {
+    const slideIdx = opts.slideIndex || 1;
+    const slideTotal = opts.slideTotal || 5;
+    const slideType = (opts.slideType || "").toUpperCase();
+
+    // Slide 2: WhatsApp Chat Evidence (Engine 5 2nd-impression algorithm hook)
+    if (slideType === "CHAT_EVIDENCE" || (slideIdx === 2 && slideTotal >= 2)) {
+      return this.renderWhatsAppChatSlide(opts);
+    }
+
+    // Slide 1: Cover Hook
+    if (slideType === "COVER" || slideIdx === 1) {
+      return this.renderCarouselCoverSlide(opts);
+    }
+
+    // Slide 4: Aura Audit / Psychological Tax
+    if (slideType === "AURA_AUDIT" || (slideIdx === 4 && slideTotal >= 4)) {
+      return this.renderCarouselAuraSlide(opts);
+    }
+
+    // Slide 5: Verdict Options / Internet is the Jury
+    if (slideType === "PROMPT" || slideType === "OPTIONS" || slideType === "VERDICT" || slideIdx === slideTotal) {
+      return this.renderCarouselVerdictSlide(opts);
+    }
+
+    // Slide 3 (or any intermediate contextual slide): Context / Dilemma Breakdown
+    return this.renderCarouselContextSlide(opts);
   }
 
   // Master generator dispatcher

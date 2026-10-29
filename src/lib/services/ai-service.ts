@@ -24,13 +24,32 @@ export const ContentIdeaSchema = z.object({
   targetAudience: z.string().default("Indian Gen Z"),
 });
 
+export const ChatMessageSchema = z.object({
+  sender: z.enum(["THEM", "ME"]).catch("THEM"),
+  text: z.string(),
+  time: z.string().catch("02:14 AM"),
+});
+
 export const CarouselSlideSchema = z.object({
   slideIndex: z.coerce.number(),
-  slideType: z.enum(["COVER", "CONTEXT", "ARGUMENT_A", "ARGUMENT_B", "OPTIONS", "PROMPT"]).catch("CONTEXT"),
+  slideType: z
+    .enum([
+      "COVER",
+      "CHAT_EVIDENCE",
+      "CONTEXT",
+      "ARGUMENT_A",
+      "ARGUMENT_B",
+      "AURA_AUDIT",
+      "OPTIONS",
+      "PROMPT",
+    ])
+    .catch("CONTEXT"),
   headline: z.string(),
   subtext: z.string().catch(""),
   badgeText: z.string().optional(),
   bodyText: z.string(),
+  chatContactName: z.string().optional(),
+  chatMessages: z.array(ChatMessageSchema).optional(),
 });
 
 export const StructuredContentPostSchema = z.object({
@@ -507,7 +526,13 @@ Formatting requirements:
 - FORMAT UNPOPULAR_OPINION: Provocative statement + short sharp justification.
 - FORMAT AURA_TAX: Specific penalty (-500 to -2000 Aura) or bonus (+1000 Aura) with psychological audit.
 - FORMAT TWO_SIDES: Position A vs Position B clearly balanced.
-- FORMAT MULTI_SLIDE_CAROUSEL: Exactly 5 slides: COVER, CONTEXT, ARGUMENT_A, ARGUMENT_B, PROMPT.`;
+- FORMAT MULTI_SLIDE_CAROUSEL (Engine 5 Carousel Retention Optimization):
+  Must generate exactly 5 retention-engineered slides:
+  - Slide 1 (COVER): Maximum tension hook ending with curiosity trigger: "Swipe for Exhibit A ➡️"
+  - Slide 2 (CHAT_EVIDENCE): THE CRITICAL HOOK (Shown by Instagram on 2nd feed impression). Authentic dark-mode WhatsApp chat evidence of the 2:14 AM dispute, realistic contact name with emoji tag (e.g. "Rohan (Bumble 🚩)" or "Roommate"), exactly 3-4 back-and-forth messages in natural Indian Gen Z / Hinglish with timestamps and blue ticks.
+  - Slide 3 (CONTEXT): Exhibit B: Two Sides of the Breakdown (Side A vs Side B).
+  - Slide 4 (AURA_AUDIT): Behavioural Audit with specific Aura Tax penalty/bonus (e.g. -1,500 Aura) analyzing the underlying psychological red flag.
+  - Slide 5 (PROMPT): The Internet Is The Jury: 4 distinct, highly debatable verdicts (A, B, C, D) with sticky comment CTA.`;
 
     const prompt = `Write a complete structured post for:
 Premise: "${params.ideaPremise}"
@@ -527,7 +552,7 @@ Output valid JSON matching this structure:
   "caption": "Full Instagram caption starting with hook, dilemma context, discussion prompt, and call to action",
   "hashtags": ["TheVerdictRoom", "ModernDating", "IndianGenZ", "AuraTax", "Dilemma"],
   "callToAction": "The internet is the jury. Drop your verdict below.",
-  "suggestedTemplate": "${params.templateCode || "THE_COURTROOM"}",
+  "suggestedTemplate": "${params.templateCode || (params.isCarousel ? "MULTI_SLIDE_CAROUSEL" : "THE_COURTROOM")}",
   ${
     params.format === "THE_CASE"
       ? `"options": [
@@ -543,11 +568,53 @@ Output valid JSON matching this structure:
     params.isCarousel
       ? `"isCarousel": true,
   "slides": [
-    {"slideIndex": 1, "slideType": "COVER", "headline": "Slide 1 Hook", "subtext": "Sub-hook", "bodyText": "Cover dilemma punchline", "badgeText": "CASE #108"},
-    {"slideIndex": 2, "slideType": "CONTEXT", "headline": "The Reality", "subtext": "Context breakdown", "bodyText": "Context details", "badgeText": "EVIDENCE"},
-    {"slideIndex": 3, "slideType": "ARGUMENT_A", "headline": "Perspective A", "subtext": "Position A summary", "bodyText": "The strongest argument for Side A", "badgeText": "SIDE A"},
-    {"slideIndex": 4, "slideType": "ARGUMENT_B", "headline": "Perspective B", "subtext": "Position B summary", "bodyText": "The strongest argument for Side B", "badgeText": "SIDE B"},
-    {"slideIndex": 5, "slideType": "PROMPT", "headline": "Your Verdict", "subtext": "Jury Call", "bodyText": "A, B, C, or D choices for comments", "badgeText": "VERDICT"}
+    {
+      "slideIndex": 1,
+      "slideType": "COVER",
+      "headline": "Provocative moral conflict hook under 120 chars stopping the scroll",
+      "subtext": "The core dilemma question",
+      "badgeText": "CASE #108 • RELATIONSHIP COURT",
+      "bodyText": "Cover dilemma punchline. Swipe for Exhibit A (Raw WhatsApp Evidence) ➡️"
+    },
+    {
+      "slideIndex": 2,
+      "slideType": "CHAT_EVIDENCE",
+      "headline": "EXHIBIT A: The 2:14 AM WhatsApp Argument",
+      "subtext": "Verified Chat Log Evidence",
+      "badgeText": "EXHIBIT A • RAW CHATS",
+      "chatContactName": "Rohan (Bumble 🚩)",
+      "chatMessages": [
+        {"sender": "THEM", "text": "First provocative text starting the dispute", "time": "02:14 AM"},
+        {"sender": "ME", "text": "Counter reply calling out behavior with Hinglish/Gen Z nuance", "time": "02:15 AM"},
+        {"sender": "THEM", "text": "Absurd justification or defensive text", "time": "02:16 AM"},
+        {"sender": "ME", "text": "Final punchline reaction", "time": "02:17 AM"}
+      ],
+      "bodyText": "Raw transcript of the 2:14 AM dispute showing where things went wrong."
+    },
+    {
+      "slideIndex": 3,
+      "slideType": "CONTEXT",
+      "headline": "The Core Dilemma: Two Sides",
+      "subtext": "Exhibit B: The Tension Breakdown",
+      "badgeText": "EXHIBIT B • THE DILEMMA",
+      "bodyText": "Side A argues for self-respect and boundaries. Side B argues this is financial or emotional pettiness disguised as modern dating."
+    },
+    {
+      "slideIndex": 4,
+      "slideType": "AURA_AUDIT",
+      "headline": "Behavioural Audit: -1,500 Aura",
+      "subtext": "Psychological Assessment",
+      "badgeText": "-1,500 AURA PENALTY",
+      "bodyText": "Why this behavior is secretly toxic. Tracking rupees or emotions to single digits signals treating companionship like a vendor invoice."
+    },
+    {
+      "slideIndex": 5,
+      "slideType": "PROMPT",
+      "headline": "The Internet Is The Jury",
+      "subtext": "Cast your verdict below",
+      "badgeText": "FINAL VERDICT",
+      "bodyText": "A. Fair — Strict 50/50 protects dignity\\nB. Unfair — Proportional to income is true fairness\\nC. Massive Red Flag — Petty scorekeeping kills romance\\nD. Both are cooked"
+    }
   ]`
       : `"isCarousel": false`
   }

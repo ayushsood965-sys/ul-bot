@@ -107,6 +107,15 @@ export async function POST(req: Request) {
     // Persist slides if carousel
     if (generated.slides && Array.isArray(generated.slides)) {
       for (const s of generated.slides) {
+        const bodyToStore =
+          s.chatMessages && s.chatMessages.length > 0
+            ? JSON.stringify({
+                contactName: s.chatContactName || "Chat Evidence",
+                messages: s.chatMessages,
+                originalBody: s.bodyText,
+              })
+            : s.bodyText;
+
         await db.contentSlide.create({
           data: {
             postId: newPost.id,
@@ -115,7 +124,7 @@ export async function POST(req: Request) {
             headline: s.headline,
             subtext: s.subtext,
             badgeText: s.badgeText || `SLIDE ${s.slideIndex}`,
-            bodyText: s.bodyText,
+            bodyText: bodyToStore,
             renderedImageUrl: `/api/creative/render/${contentId}?slide=${s.slideIndex}`,
           },
         });

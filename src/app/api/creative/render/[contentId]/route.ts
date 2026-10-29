@@ -36,17 +36,34 @@ export async function GET(
 
     let headline = post.hook;
     let narrative = post.mainNarrative;
-    let slideType = undefined;
-    const templateCode = (post.suggestedTemplate || "THE_COURTROOM") as any;
+    let slideType: string | undefined = undefined;
+    let chatContactName: string | undefined = undefined;
+    let chatMessages: Array<{ sender: "ME" | "THEM"; text: string; time?: string }> | undefined = undefined;
+    let templateCode = (post.suggestedTemplate || "THE_COURTROOM") as any;
 
     if (post.isCarousel && post.slides.length > 0) {
+      templateCode = "MULTI_SLIDE_CAROUSEL";
       const targetSlide = slideNumber
         ? post.slides.find((s) => s.slideIndex === slideNumber) || post.slides[0]
         : post.slides[0];
 
       headline = targetSlide.headline || post.hook;
       narrative = targetSlide.bodyText || post.mainNarrative;
-      slideType = targetSlide.badgeText || `SLIDE ${targetSlide.slideIndex}/${post.slides.length}`;
+      slideType = targetSlide.slideType || targetSlide.badgeText || `SLIDE ${targetSlide.slideIndex}/${post.slides.length}`;
+
+      // Check if bodyText contains serialized chat JSON or if slideType is CHAT_EVIDENCE
+      if (targetSlide.bodyText && (targetSlide.bodyText.startsWith("{") || targetSlide.slideType === "CHAT_EVIDENCE")) {
+        try {
+          const parsed = JSON.parse(targetSlide.bodyText);
+          if (parsed && Array.isArray(parsed.messages)) {
+            chatContactName = parsed.contactName;
+            chatMessages = parsed.messages;
+            if (parsed.originalBody) {
+              narrative = parsed.originalBody;
+            }
+          }
+        } catch {}
+      }
     }
 
     const svg = CreativeRendererService.generateSVG({
@@ -60,6 +77,8 @@ export async function GET(
       slideIndex: slideNumber || 1,
       slideTotal: post.slides.length || 1,
       slideType,
+      chatContactName,
+      chatMessages,
       stampText: post.status === "PUBLISHED" ? "VERDICT DELIVERED" : "VERDICT PENDING",
     });
 
